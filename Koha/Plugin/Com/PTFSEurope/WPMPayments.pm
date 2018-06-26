@@ -60,7 +60,7 @@ sub opac_online_payment_begin {
     my ( $template, $borrowernumber ) = get_template_and_user(
         {
             template_name =>
-              abs_path( $self->mbf_path('opac-account-pay-error.tt') ),
+              abs_path( $self->mbf_path('opac_online_payment_error.tt') ),
             query           => $cgi,
             type            => 'opac',
             authnotrequired => 0,
