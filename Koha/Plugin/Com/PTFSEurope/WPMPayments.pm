@@ -15,7 +15,7 @@ use XML::LibXML;
 use Digest::MD5 qw(md5_hex);
 
 ## Here we set our plugin version
-our $VERSION = "{VERSION}";
+our $VERSION = "00.00.01";
 
 ## Here is our metadata, some keys are required, some are optional
 our $metadata = {
