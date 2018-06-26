@@ -1,0 +1,30 @@
+{
+  "name": "koha-plugin-wpm-payments",
+  "version": "0.0.01",
+  "previous_version": "0.0.00",
+  "description": "Koha WPM Online Payments Plugin",
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-cli": "^1.2.2",
+    "gulp-github-release": "^1.1.5",
+    "gulp-run": "^1.7.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ptfs-europe/koha-plugin-wpm-payments.git"
+  },
+  "author": "Martin Renvoize <martin.renvoize@ptfs-europe.com>",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/ptfs-europe/koha-plugin-wpm-payments/issues"
+  },
+  "homepage": "https://github.com/ptfs-europe/koha-plugin-wpm-payments#readme",
+  "dependencies": {
+    "datetime": "0.0.3",
+    "jsonfile": "^4.0.0",
+    "node-datetime": "^2.0.0"
+  }
+}
