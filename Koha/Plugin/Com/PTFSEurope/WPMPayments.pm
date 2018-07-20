@@ -10,6 +10,7 @@ use Koha::Account;
 use Koha::Account::Lines;
 use Cwd qw(abs_path);
 use Mojo::UserAgent;
+use Mojo::Cookie::Response;
 
 use XML::LibXML;
 use Digest::MD5 qw(md5_hex);
@@ -76,26 +77,30 @@ sub opac_online_payment_begin {
           . "/cgi-bin/koha/opac-account-pay-return.pl" );
     $redirect_url->query_form(
         { payment_method => scalar $cgi->param('payment_method') } );
+    warn "redirecturl: ".$redirect_url->as_string;
 
     # Construct callback URI
     my $callback_url =
       URI->new( C4::Context->preference('OPACBaseURL')
           . "/cgi-bin/koha/opac/opac-account-pay-return.pl" );
-    $callback_url->query(
+    $callback_url->query_form(
         { payment_method => scalar $cgi->param('payment_method') } );
+    warn "callbackurl: " .$callback_url->as_string;
 
     # Construct cancel URI
     my $cancel_url = URI->new( C4::Context->preference('OPACBaseURL')
           . "/cgi-bin/koha/opac-account-pay-return.pl" );
-    $cancel_url->query(
+    $cancel_url->query_form(
         { payment_method => scalar $cgi->param('payment_method'), cancel => 1 }
     );
+    warn "cancelurl: ".$cancel_url->as_string;
 
     # Create a transaction
-    my $transaction_result =
-      $schema->resultset('AcTransaction')
-      ->create( { updated => DateTime->now } );
-    my $transaction_id = $transaction_result->transaction_id;
+    my $dbh = C4::Context->dbh;
+    my $sth = $dbh->prepare("INSERT INTO `wpm_transactions` (`transaction_id`) VALUES (?)");
+    $sth->execute("NULL");
+
+    my $transaction_id = $dbh->last_insert_id(undef, undef, qw(wpm_transactions transaction_id));
 
     # Construct XML POST
     my $xml = XML::LibXML::Document->new( '1.0', 'utf-8' );
@@ -127,7 +132,7 @@ sub opac_online_payment_begin {
         {
             name  => 'customerid',
             value => { value => $borrowernumber, cdata => 0 }
-        },    #studentnumber
+        },
         {
             name  => 'title',
             value => { value => $borrower_result->title, cdata => 1 }
@@ -215,6 +220,7 @@ sub opac_online_payment_begin {
         }
     );
 
+    # Build XML from structure
     for my $field (@fields) {
         my $tag   = $xml->createElement( $field->{name} );
         my $value = $field->{value};
@@ -236,7 +242,7 @@ sub opac_online_payment_begin {
       ->search( { accountlines_id => \@accountline_ids } );
     my $now               = DateTime->now;
     my $dateoftransaction = $now->ymd('-') . ' ' . $now->hms(':');
-    my $pay_count         = 0;
+    #my $pay_count         = 0; # Former process of assigning a running number for identifying payments/payment blocks
     my $sum               = 0;
     for my $accountline ( $accountlines->all ) {
 
@@ -245,9 +251,9 @@ sub opac_online_payment_begin {
         $sum = $sum + $amount;
 
         # Build payments block
-        #####################
+        ######################
         my $payments = $xml->createElement('payments');
-        $payments->setAttribute( 'id'        => ++$pay_count );
+        $payments->setAttribute( 'id'        => $accountline->accountline_id );
         $payments->setAttribute( 'type'      => 'PN' );
         $payments->setAttribute( 'payoption' => $accountline->accounttype );
 
@@ -262,7 +268,7 @@ sub opac_online_payment_begin {
         $payments->appendChild($description);
 
         my $payment = $xml->createElement("payment");
-        $payment->setAttribute( 'payid' => "$pay_count" );
+        $payment->setAttribute( 'payid' => $accountline->accountline_id );
 
         my $customfield1 = $xml->createElement("customfield1");
         $payment->appendChild($customfield1);
@@ -310,18 +316,6 @@ sub opac_online_payment_begin {
 
         # Add 'payments' to 'root' block
         $root->appendChild($payments);
-
-        #
-        # Link accountline to the transaction
-        # [Set status '1' to reperesent request sent]
-        my $transactionAccount_result =
-          $schema->resultset('AcTransactionAccount')->create(
-            {
-                accountline_id => $accountline->accountlines_id,
-                transaction_id => $transaction_id,
-                status         => 1
-            }
-          );
     }
 
     # Add signature to xml
@@ -343,13 +337,19 @@ sub opac_online_payment_begin {
       $ua->post(
         $pathway => form => { xml => $xml->toString() } => charset => 'UTF-8' );
     if ( my $res = $tx->success ) {
-        print $cgi->redirect( $res->headers->header("location") );
+        warn "Headers:\n\n".$res->headers->to_string;
+        my $path = $res->headers->header('location');
+        my $url = Mojo::URL->new($self->retrieve_data('WPMPathway'))->path("$path");
+        my @mojo_cookies = map { Mojo::Cookie::Response->parse($_) } @{$res->headers->every_header('Set-Cookie')};
+        my $cookies = [ map { my $mojo_cookie = $_->[0]; $cgi->cookie( -name => $mojo_cookie->name, -value => $mojo_cookie->value, -path => $mojo_cookie->path, -expires => $mojo_cookie->expires, -domain => $mojo_cookie->domain, -secure => $mojo_cookie->secure ) } @mojo_cookies ];
+        print $cgi->redirect( '-uri' => $url, '-status' => $res->headers->status, '-cookie' => $cookies );
     }
     else {
         my $err = $tx->error;
         $template->param();
 
-        $self->output_html( $template->output() );
+        print $cgi->header();
+        print $template->output();
 
         die "$err->{code} response: $err->{message}" if $err->{code};
         die "Connection error: $err->{message}";
@@ -367,43 +367,47 @@ sub opac_online_payment_end {
         eval { $xml = XML::LibXML->load_xml( string => $post ) };
         warn "error: " . $@ if $@;
 
-        my @rootNode = $xml->findnodes('/wpmpaymentrequest');
-        my $transaction =
-          $xml->findnodes('/wpmpaymentrequest/transactionreference');
-        my $success = $xml->findnodes('/wpmpaymentrequest/transaction/success');
+        my $borrowernumber = $xml->findvalue('/wpmpaymentrequest/customerid');
+        my $transaction_id = $xml->findvalue('/wpmpaymentrequest/transactionreference');
+        my $success = $xml->findvalue('/wpmpaymentrequest/transaction/success');
 
         if ( $success eq '1' ) {
-            my $schema = Koha::Database->new()->schema();
 
-            # Make payments (associating them to a transaction)
-            my @accountlines = $schema->resultset('AcTransactionAccount')
-              ->search( { transaction_id => $transaction } )->all;
-
-            # FIXME: These should really be grouped into one
-            # 'Pay' line in accountlines
-            for my $account (@accountlines) {
-                my $dump = { $account->get_columns };
-
-                # Make Payment
-                my $paymentID = makepayment(
-                    $account->accountline_id,
-                    $account->accountline->borrowernumber->borrowernumber,
-                    $account->accountline->accountno,
-                    $account->accountline->amount
-                );
-
-                # Update Transaction (2 = success)
-                $account->update( { status => '2' } );
-
-                # Add payment accountline to transaction group
-                my $transactionAccount_result =
-                  $schema->resultset('AcTransactionAccount')->create(
-                    {
-                        accountline_id => $paymentID,
-                        transaction_id => $transaction,
-                        status         => 2
+            # Extract accountlines to pay
+            my @accountline_ids = ();
+            my $payments_nodes = $xml->findnodes('/wpmpaymentrequest/payments'); 
+            for my $payments_node ( $payments_nodes->get_nodelist ) {
+                my $payment_nodes = $payments_node->findnodes('./payment');
+                for my $payment_node ( $payment_nodes->get_nodelist ) {
+                    if ($payment_node->findvalue('./@paid')) {
+                        my $accountline = $payment_node->findvalue('./@payid');
+                        push @accountline_ids, $accountline;
                     }
-                  );
+                }
+            }
+
+            my $totalpaid = $xml->findvalue('/wpmpaymentrequest/transaction/totalpaid');
+
+            # Make Payment
+            my $lines     = Koha::Account::Lines->search( { accountline_id => { 'in' => \@accountline_ids } } )->as_list;
+            my $account   = Koha::Account->new( { patron_id => $borrowernumber } );
+            my $accountline_id = $account->pay( {
+                amount       => $totalpaid,
+                note         => 'WPM Payment',
+                library_id   => $branchcode,
+                lines        => $lines, # Arrayref of Koha::Account::Line objects to pay
+                #account_type => $type,  # accounttype code
+                #offset_type  => $offset_type,    # offset type code
+                }
+            );
+
+            # Link payment to wpm_transactions
+            my $dbh = C4::Context->dbh;
+            my $sth = $dbh->prepare("UPDATE `wpm_transactions` SET `accountline_id` = ? WHERE `transaction_id` = ?");
+            $sth->execute($accountline_id, $transaction_id);
+
+            # Renew any items as required
+            for my $account ( @{$lines} ) {
 
                 # Renew if required
                 if ( defined( $account->accountline->accounttype )
@@ -435,7 +439,7 @@ sub opac_online_payment_end {
             my $response = new CGI;
             my $reply    = XML::LibXML::Document->new( '1.0', 'utf-8' );
             my $root     = $reply->createElement("wpmmessagevalidation");
-            my $md5      = $rootNode[0]->getAttribute('msgid');
+            my $md5      = $xml->findvalue('/wpmpaymentrequest/@msgid');
             $root->setAttribute( 'msgid' => "$md5" );
 
             my $validation = $reply->createElement('validation');
@@ -459,7 +463,7 @@ sub opac_online_payment_end {
 
             my $reply = XML::LibXML::Document->new( '1.0', 'utf-8' );
             my $root  = $reply->createElement("wpmmessagevalidation");
-            my $md5   = $rootNode[0]->getAttribute('msgid');
+            my $md5      = $xml->findvalue('/wpmpaymentrequest/@msgid');
             $root->setAttribute( 'msgid' => "$md5" );
 
             my $validation = $reply->createElement('validation');
@@ -493,19 +497,16 @@ sub opac_online_payment_end {
     }
 }
 
-## If your plugin needs to add some CSS to the OPAC, you'll want
-## to return that CSS here. Don't forget to wrap your CSS in <style>
-## tags. By not adding them automatically for you, you'll have a chance
-## to include external CSS files as well!
-sub opac_head {
-    my ($self) = @_;
+## If your plugin needs to add some javascript in the OPAC, you'll want
+## to return that javascript here. Don't forget to wrap your javascript in
+## <script> tags. By not adding them automatically for you, you'll have a
+## chance to include other javascript files if necessary.
+sub opac_js {
+    my ( $self ) = @_;
 
+    # We could add in a preference driven 'enforced pay all' option here.
     return q|
-        <style>
-          body {
-            background-color: orange;
-          }
-        </style>
+        <script></script>
     |;
 }
 
@@ -531,7 +532,8 @@ sub configure {
             WPMDepartmentID => $self->retrieve_data('WPMDepartmentID'),
         );
 
-        $self->output_html( $template->output() );
+        print $cgi->header();
+        print $template->output();
     }
     else {
         $self->store_data(
@@ -553,17 +555,20 @@ sub configure {
 ## be done when the plugin if first installed should be executed in this method.
 ## The installation method should always return true if the installation succeeded
 ## or false if it failed.
-#sub install() {
-#    my ( $self, $args ) = @_;
-#
-#    my $table = $self->get_qualified_table_name('mytable');
-#
-#    return C4::Context->dbh->do( "
-#        CREATE TABLE  $table (
-#            `borrowernumber` INT( 11 ) NOT NULL
-#        ) ENGINE = INNODB;
-#    " );
-#}
+sub install() {
+    my ( $self, $args ) = @_;
+
+    my $table = $self->get_qualified_table_name('wpm_transactions');
+
+    return C4::Context->dbh->do( "
+        CREATE TABLE  $table (
+            `transaction_id` INT( 11 ) NOT NULL AUTO_INCREMENT,
+            `accountline_id` INT( 11 ),
+            `updated`,
+            PRIMARY KEY (`transaction_id`)
+        ) ENGINE = INNODB;
+    " );
+}
 
 ## This is the 'upgrade' method. It will be triggered when a newer version of a
 ## plugin is installed over an existing older version of a plugin
