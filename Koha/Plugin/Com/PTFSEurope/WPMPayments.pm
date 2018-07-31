@@ -8,6 +8,7 @@ use C4::Context;
 use C4::Auth;
 use Koha::Account;
 use Koha::Account::Lines;
+use Koha::Patrons;
 use Cwd qw(abs_path);
 use Mojo::UserAgent;
 use Mojo::Cookie::Response;
@@ -372,6 +373,8 @@ sub opac_online_payment_end {
         my $transaction_id = $xml->findvalue('/wpmpaymentrequest/transactionreference');
         my $success = $xml->findvalue('/wpmpaymentrequest/transaction/success');
 
+        my $borrower = Koha::Patrons->find($borrowernumber);
+
         if ( $success eq '1' ) {
 
             # Extract accountlines to pay
@@ -395,7 +398,7 @@ sub opac_online_payment_end {
             my $accountline_id = $account->pay( {
                 amount       => $totalpaid,
                 note         => 'WPM Payment',
-                library_id   => $branchcode,
+                library_id   => $borrower->branchcode,
                 lines        => $lines, # Arrayref of Koha::Account::Line objects to pay
                 #account_type => $type,  # accounttype code
                 #offset_type  => $offset_type,    # offset type code
