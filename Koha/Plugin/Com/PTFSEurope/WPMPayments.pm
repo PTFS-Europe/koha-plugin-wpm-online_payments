@@ -97,7 +97,8 @@ sub opac_online_payment_begin {
 
     # Create a transaction
     my $dbh = C4::Context->dbh;
-    my $sth = $dbh->prepare("INSERT INTO `wpm_transactions` (`transaction_id`) VALUES (?)");
+    my $table = $self->get_qualified_table_name('wpm_transactions');
+    my $sth = $dbh->prepare("INSERT INTO $table (`transaction_id`) VALUES (?)");
     $sth->execute("NULL");
 
     my $transaction_id = $dbh->last_insert_id(undef, undef, qw(wpm_transactions transaction_id));
