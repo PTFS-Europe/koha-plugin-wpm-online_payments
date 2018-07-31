@@ -335,6 +335,7 @@ sub opac_online_payment_begin {
     # Send POST to WPM
     my $ua = Mojo::UserAgent->new( max_redirects => 0 );
     my $pathway = $self->retrieve_data('WPMPathway');
+    warn $xml->toString();
     my $tx =
       $ua->post(
         $pathway => form => { xml => $xml->toString() } => charset => 'UTF-8' );
@@ -568,7 +569,7 @@ sub install() {
         CREATE TABLE  $table (
             `transaction_id` INT( 11 ) NOT NULL AUTO_INCREMENT,
             `accountline_id` INT( 11 ),
-            `updated`,
+            `updated` TIMESTAMP,
             PRIMARY KEY (`transaction_id`)
         ) ENGINE = INNODB;
     " );
