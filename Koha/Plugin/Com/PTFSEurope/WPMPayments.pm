@@ -10,8 +10,6 @@ use Koha::Account;
 use Koha::Account::Lines;
 use Koha::Patrons;
 use Cwd qw(abs_path);
-use Mojo::UserAgent;
-use Mojo::Cookie::Response;
 
 use XML::LibXML;
 use Digest::MD5 qw(md5_hex);
@@ -60,8 +58,6 @@ sub opac_online_payment_begin {
     my $schema = Koha::Database->new()->schema();
 
     my ( $template, $borrowernumber ) = get_template_and_user(
-        {
-            template_name =>
               abs_path( $self->mbf_path('opac_online_payment_error.tt') ),
             query           => $cgi,
             type            => 'opac',
@@ -78,7 +74,6 @@ sub opac_online_payment_begin {
           . "/cgi-bin/koha/opac-account-pay-return.pl" );
     $redirect_url->query_form(
         { payment_method => scalar $cgi->param('payment_method') } );
-    warn "redirecturl: ".$redirect_url->as_string;
 
     # Construct callback URI
     my $callback_url =
@@ -86,7 +81,6 @@ sub opac_online_payment_begin {
           . "/cgi-bin/koha/opac-account-pay-return.pl" );
     $callback_url->query_form(
         { payment_method => scalar $cgi->param('payment_method') } );
-    warn "callbackurl: " .$callback_url->as_string;
 
     # Construct cancel URI
     my $cancel_url = URI->new( C4::Context->preference('OPACBaseURL')
@@ -94,7 +88,6 @@ sub opac_online_payment_begin {
     $cancel_url->query_form(
         { payment_method => scalar $cgi->param('payment_method'), cancel => 1 }
     );
-    warn "cancelurl: ".$cancel_url->as_string;
 
     # Create a transaction
     my $dbh = C4::Context->dbh;
@@ -318,7 +311,6 @@ sub opac_online_payment_begin {
         $payments->appendChild($payment);
 
         # Add 'payments' to 'root' block
-        warn "Adding payments block to root\n";
         $root->appendChild($payments);
     }
 
@@ -333,33 +325,15 @@ sub opac_online_payment_begin {
 
     # Finalise XML Document
     $xml->setDocumentElement($root);
+    my $string = $xml->toString();
 
-    # Send POST to WPM
-    my $ua = Mojo::UserAgent->new( max_redirects => 0 );
-    my $pathway = $self->retrieve_data('WPMPathway');
-    warn $xml->toString();
-    my $tx =
-      $ua->post(
-        $pathway => form => { xml => $xml->toString() } => charset => 'UTF-8' );
-    if ( my $res = $tx->success ) {
-        warn "Headers:\n\n".$res->headers->to_string;
-        my $path = $res->headers->header('location');
-        my $url = Mojo::URL->new($self->retrieve_data('WPMPathway'))->path("$path");
-        my @mojo_cookies = map { Mojo::Cookie::Response->parse($_) } @{$res->headers->every_header('Set-Cookie')};
-        my $cookies = [ map { my $mojo_cookie = $_->[0]; $cgi->cookie( -name => $mojo_cookie->name, -value => $mojo_cookie->value, -path => $mojo_cookie->path, -expires => $mojo_cookie->expires, -domain => $mojo_cookie->domain, -secure => $mojo_cookie->secure ) } @mojo_cookies ];
-        print $cgi->redirect( '-uri' => $url, '-status' => $res->headers->status, '-cookie' => $cookies );
-    }
-    else {
-        my $err = $tx->error;
-        $template->param();
+    $template->param(
+        WPMPathway	     => $self->retrieve_data('WPMPathway'),
+        XMLPost              => $string
+    );
 
-        print $cgi->header();
-        print $template->output();
-
-        die "$err->{code} response: $err->{message}" if $err->{code};
-        die "Connection error: $err->{message}";
-    }
-
+    print $cgi->header();
+    print $template->output();
 }
 
 ## Complete the payment process
