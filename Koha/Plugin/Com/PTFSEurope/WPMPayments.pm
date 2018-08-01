@@ -83,7 +83,7 @@ sub opac_online_payment_begin {
     # Construct callback URI
     my $callback_url =
       URI->new( C4::Context->preference('OPACBaseURL')
-          . "/cgi-bin/koha/opac/opac-account-pay-return.pl" );
+          . "/cgi-bin/koha/opac-account-pay-return.pl" );
     $callback_url->query_form(
         { payment_method => scalar $cgi->param('payment_method') } );
     warn "callbackurl: " .$callback_url->as_string;
@@ -255,7 +255,7 @@ sub opac_online_payment_begin {
         # Build payments block
         ######################
         my $payments = $xml->createElement('payments');
-        $payments->setAttribute( 'id'        => $accountline->accountline_id );
+        $payments->setAttribute( 'id'        => $accountline->accountlines_id );
         $payments->setAttribute( 'type'      => 'PN' );
         $payments->setAttribute( 'payoption' => $accountline->accounttype );
 
@@ -269,8 +269,9 @@ sub opac_online_payment_begin {
         }
         $payments->appendChild($description);
 
+        # Build payment block
         my $payment = $xml->createElement("payment");
-        $payment->setAttribute( 'payid' => $accountline->accountline_id );
+        $payment->setAttribute( 'payid' => $accountline->accountlines_id );
 
         my $customfield1 = $xml->createElement("customfield1");
         $payment->appendChild($customfield1);
@@ -317,6 +318,7 @@ sub opac_online_payment_begin {
         $payments->appendChild($payment);
 
         # Add 'payments' to 'root' block
+        warn "Adding payments block to root\n";
         $root->appendChild($payments);
     }
 
