@@ -9,7 +9,6 @@ use C4::Auth;
 use Koha::Account;
 use Koha::Account::Lines;
 use Koha::Patrons;
-use Cwd qw(abs_path);
 
 use XML::LibXML;
 use Digest::MD5 qw(md5_hex);
@@ -58,7 +57,7 @@ sub opac_online_payment_begin {
     my $schema = Koha::Database->new()->schema();
 
     my ( $template, $borrowernumber ) = get_template_and_user(
-              abs_path( $self->mbf_path('opac_online_payment_error.tt') ),
+        {   template_name   => $self->mbf_path('opac_online_payment_begin.tt'),
             query           => $cgi,
             type            => 'opac',
             authnotrequired => 0,
@@ -84,10 +83,7 @@ sub opac_online_payment_begin {
 
     # Construct cancel URI
     my $cancel_url = URI->new( C4::Context->preference('OPACBaseURL')
-          . "/cgi-bin/koha/opac-account-pay-return.pl" );
-    $cancel_url->query_form(
-        { payment_method => scalar $cgi->param('payment_method'), cancel => 1 }
-    );
+          . "/cgi-bin/koha/opac-account.pl" );
 
     # Create a transaction
     my $dbh = C4::Context->dbh;
@@ -340,8 +336,10 @@ sub opac_online_payment_begin {
 sub opac_online_payment_end {
     my ( $self, $args ) = @_;
     my $cgi = $self->{'cgi'};
+    warn "Inside opac_online_payment_end\n";
 
     if ( my $post = $cgi->param('POSTDATA') ) {
+        warn "Found WPM POST back\n";
         my $xml;
         eval { $xml = XML::LibXML->load_xml( string => $post ) };
         warn "error: " . $@ if $@;
@@ -464,17 +462,25 @@ sub opac_online_payment_end {
 
     }
     else {
+        warn "Found WPM redirect back\n";
 
         my ( $template, $borrowernumber ) = get_template_and_user(
             {
                 template_name =>
-                  abs_path( $self->mbf_path('opac_online_payment_end.tt') ),
+                  $self->mbf_path('opac_online_payment_end.tt'),
                 query           => $cgi,
                 type            => 'opac',
                 authnotrequired => 0,
                 is_plugin       => 1,
             }
         );
+
+       $template->param(
+          message	     => 'valid_payment'
+       );
+
+        print $cgi->header();
+        print $template->output();
     }
 }
 
