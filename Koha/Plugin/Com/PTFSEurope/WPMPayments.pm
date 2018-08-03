@@ -366,7 +366,7 @@ sub opac_online_payment_end {
       Koha::Account::Lines->find( { accountlines_id => $accountline_id } );
     my $transaction_value = $line->amount;
     my $transaction_amount = sprintf "%.2f", $transaction_value;
-    $transaction_amount =~ s/-//g;
+    $transaction_amount =~ s/^-//g;
 
     if ( defined($transaction_value) ) {
         $template->param(
