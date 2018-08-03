@@ -57,7 +57,8 @@ sub opac_online_payment_begin {
     my $schema = Koha::Database->new()->schema();
 
     my ( $template, $borrowernumber ) = get_template_and_user(
-        {   template_name   => $self->mbf_path('opac_online_payment_begin.tt'),
+        {
+            template_name   => $self->mbf_path('opac_online_payment_begin.tt'),
             query           => $cgi,
             type            => 'opac',
             authnotrequired => 0,
@@ -69,22 +70,29 @@ sub opac_online_payment_begin {
     my $borrower_result = Koha::Patrons->find($borrowernumber);
 
     # Create a transaction
-    my $dbh = C4::Context->dbh;
+    my $dbh   = C4::Context->dbh;
     my $table = $self->get_qualified_table_name('wpm_transactions');
     my $sth = $dbh->prepare("INSERT INTO $table (`transaction_id`) VALUES (?)");
     $sth->execute("NULL");
 
-    my $transaction_id = $dbh->last_insert_id(undef, undef, qw(wpm_transactions transaction_id));
+    my $transaction_id =
+      $dbh->last_insert_id( undef, undef, qw(wpm_transactions transaction_id) );
 
     # Construct redirect URI
     my $redirect_url = URI->new( C4::Context->preference('OPACBaseURL')
           . "/cgi-bin/koha/opac-account-pay-return.pl" );
     $redirect_url->query_form(
-        { payment_method => scalar $cgi->param('payment_method'), transaction_id => $transaction_id } );
+        {
+            payment_method => scalar $cgi->param('payment_method'),
+            transaction_id => $transaction_id
+        }
+    );
 
     # Construct callback URI
-    my $callback_url = URI->new( C4::Context->preference('OPACBaseURL') .
-      $self->get_plugin_http_path() . "/callback.pl" );
+    my $callback_url =
+      URI->new( C4::Context->preference('OPACBaseURL')
+          . $self->get_plugin_http_path()
+          . "/callback.pl" );
 
     # Construct cancel URI
     my $cancel_url = URI->new( C4::Context->preference('OPACBaseURL')
@@ -230,8 +238,8 @@ sub opac_online_payment_begin {
       ->search( { accountlines_id => \@accountline_ids } );
     my $now               = DateTime->now;
     my $dateoftransaction = $now->ymd('-') . ' ' . $now->hms(':');
-    #my $pay_count         = 0; # Former process of assigning a running number for identifying payments/payment blocks
-    my $sum               = 0;
+
+    my $sum = 0;
     for my $accountline ( $accountlines->all ) {
 
         # Track sum
@@ -321,8 +329,8 @@ sub opac_online_payment_begin {
     my $string = $xml->toString();
 
     $template->param(
-        WPMPathway	     => $self->retrieve_data('WPMPathway'),
-        XMLPost              => $string
+        WPMPathway => $self->retrieve_data('WPMPathway'),
+        XMLPost    => $string
     );
 
     print $cgi->header();
@@ -336,8 +344,7 @@ sub opac_online_payment_end {
 
     my ( $template, $borrowernumber ) = get_template_and_user(
         {
-            template_name =>
-              $self->mbf_path('opac_online_payment_end.tt'),
+            template_name   => $self->mbf_path('opac_online_payment_end.tt'),
             query           => $cgi,
             type            => 'opac',
             authnotrequired => 0,
@@ -349,26 +356,29 @@ sub opac_online_payment_end {
 
     # Check payment went through here
     my $table = $self->get_qualified_table_name('wpm_transactions');
-    my $dbh = C4::Context->dbh;
-    my $sth = $dbh->prepare("SELECT accountline_id FROM $table WHERE transaction_id = ?");
+    my $dbh   = C4::Context->dbh;
+    my $sth   = $dbh->prepare(
+        "SELECT accountline_id FROM $table WHERE transaction_id = ?");
     $sth->execute($transaction_id);
     my ($accountline_id) = $sth->fetchrow_array();
 
-    my $line               = Koha::Account::Lines->find( { accountlines_id => $accountline_id } );
-    my $transaction_value  = $line->amount;
+    my $line =
+      Koha::Account::Lines->find( { accountlines_id => $accountline_id } );
+    my $transaction_value = $line->amount;
     my $transaction_amount = sprintf "%.2f", $transaction_value;
     $transaction_amount =~ s/-//g;
 
-    if (defined($transaction_value)) {
+    if ( defined($transaction_value) ) {
         $template->param(
             borrower      => scalar Koha::Patrons->find($borrowernumber),
             message       => 'valid_payment',
             message_value => $transaction_amount
         );
-    } else {
+    }
+    else {
         $template->param(
-            borrower      => scalar Koha::Patrons->find($borrowernumber),
-            message       => 'no_amount'
+            borrower => scalar Koha::Patrons->find($borrowernumber),
+            message  => 'no_amount'
         );
     }
 
@@ -381,7 +391,7 @@ sub opac_online_payment_end {
 ## <script> tags. By not adding them automatically for you, you'll have a
 ## chance to include other javascript files if necessary.
 sub opac_js {
-    my ( $self ) = @_;
+    my ($self) = @_;
 
     # We could add in a preference driven 'enforced pay all' option here.
     return q|
