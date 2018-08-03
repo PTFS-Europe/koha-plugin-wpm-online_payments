@@ -87,26 +87,26 @@ if ( $success eq '1' ) {
     $sth->execute( $accountline_id, $transaction_id );
 
     # Renew any items as required
-    for my $account ( @{$lines} ) {
+    for my $line ( @{$lines} ) {
 
         # Renew if required
-        if ( defined( $account->accountline->accounttype )
-            && $account->accountline->accounttype eq "FU" )
+        if ( defined( $line->accounttype )
+            && $line->accounttype eq "FU" )
         {
             if (
                 CheckIfIssuedToPatron(
-                    $account->accountline->borrowernumber->borrowernumber,
-                    $account->accountline->itemnumber->biblionumber
+                    $line->borrowernumber,
+                    $line->itemnumber
                 )
               )
             {
                 my $datedue = AddRenewal(
-                    $account->accountline->borrowernumber->borrowernumber,
-                    $account->accountline->itemnumber->itemnumber
+                    $line->borrowernumber,
+                    $line->itemnumber
                 );
                 C4::Circulation::_FixOverduesOnReturn(
-                    $account->accountline->borrowernumber->borrowernumber,
-                    $account->accountline->itemnumber->itemnumber
+                    $line->borrowernumber,
+                    $line->itemnumber
                 );
             }
         }
