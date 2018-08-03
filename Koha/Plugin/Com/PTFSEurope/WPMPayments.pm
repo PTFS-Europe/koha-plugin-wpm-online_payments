@@ -68,23 +68,6 @@ sub opac_online_payment_begin {
     # Get the borrower
     my $borrower_result = Koha::Patrons->find($borrowernumber);
 
-    # Construct redirect URI
-    my $redirect_url = URI->new( C4::Context->preference('OPACBaseURL')
-          . "/cgi-bin/koha/opac-account-pay-return.pl" );
-    $redirect_url->query_form(
-        { payment_method => scalar $cgi->param('payment_method') } );
-
-    # Construct callback URI
-    my $callback_url =
-      URI->new( C4::Context->preference('OPACBaseURL')
-          . "/cgi-bin/koha/opac-account-pay-return.pl" );
-    $callback_url->query_form(
-        { payment_method => scalar $cgi->param('payment_method') } );
-
-    # Construct cancel URI
-    my $cancel_url = URI->new( C4::Context->preference('OPACBaseURL')
-          . "/cgi-bin/koha/opac-account.pl" );
-
     # Create a transaction
     my $dbh = C4::Context->dbh;
     my $table = $self->get_qualified_table_name('wpm_transactions');
@@ -92,6 +75,20 @@ sub opac_online_payment_begin {
     $sth->execute("NULL");
 
     my $transaction_id = $dbh->last_insert_id(undef, undef, qw(wpm_transactions transaction_id));
+
+    # Construct redirect URI
+    my $redirect_url = URI->new( C4::Context->preference('OPACBaseURL')
+          . "/cgi-bin/koha/opac-account-pay-return.pl" );
+    $redirect_url->query_form(
+        { payment_method => scalar $cgi->param('payment_method'), transaction_id => $transaction_id } );
+
+    # Construct callback URI
+    my $callback_url = URI->new( C4::Context->preference('OPACBaseURL') .
+      $self->get_plugin_http_path() . "/callback.pl" );
+
+    # Construct cancel URI
+    my $cancel_url = URI->new( C4::Context->preference('OPACBaseURL')
+          . "/cgi-bin/koha/opac-account.pl" );
 
     # Construct XML POST
     my $xml = XML::LibXML::Document->new( '1.0', 'utf-8' );
@@ -336,152 +333,47 @@ sub opac_online_payment_begin {
 sub opac_online_payment_end {
     my ( $self, $args ) = @_;
     my $cgi = $self->{'cgi'};
-    warn "Inside opac_online_payment_end\n";
 
-    if ( my $post = $cgi->param('POSTDATA') ) {
-        warn "Found WPM POST back\n";
-        my $xml;
-        eval { $xml = XML::LibXML->load_xml( string => $post ) };
-        warn "error: " . $@ if $@;
-
-        my $borrowernumber = $xml->findvalue('/wpmpaymentrequest/customerid');
-        my $transaction_id = $xml->findvalue('/wpmpaymentrequest/transactionreference');
-        my $success = $xml->findvalue('/wpmpaymentrequest/transaction/success');
-
-        my $borrower = Koha::Patrons->find($borrowernumber);
-
-        if ( $success eq '1' ) {
-
-            # Extract accountlines to pay
-            my @accountline_ids = ();
-            my $payments_nodes = $xml->findnodes('/wpmpaymentrequest/payments'); 
-            for my $payments_node ( $payments_nodes->get_nodelist ) {
-                my $payment_nodes = $payments_node->findnodes('./payment');
-                for my $payment_node ( $payment_nodes->get_nodelist ) {
-                    if ($payment_node->findvalue('./@paid')) {
-                        my $accountline = $payment_node->findvalue('./@payid');
-                        push @accountline_ids, $accountline;
-                    }
-                }
-            }
-
-            my $totalpaid = $xml->findvalue('/wpmpaymentrequest/transaction/totalpaid');
-
-            # Make Payment
-            my $lines     = Koha::Account::Lines->search( { accountline_id => { 'in' => \@accountline_ids } } )->as_list;
-            my $account   = Koha::Account->new( { patron_id => $borrowernumber } );
-            my $accountline_id = $account->pay( {
-                amount       => $totalpaid,
-                note         => 'WPM Payment',
-                library_id   => $borrower->branchcode,
-                lines        => $lines, # Arrayref of Koha::Account::Line objects to pay
-                #account_type => $type,  # accounttype code
-                #offset_type  => $offset_type,    # offset type code
-                }
-            );
-
-            # Link payment to wpm_transactions
-            my $dbh = C4::Context->dbh;
-            my $sth = $dbh->prepare("UPDATE `wpm_transactions` SET `accountline_id` = ? WHERE `transaction_id` = ?");
-            $sth->execute($accountline_id, $transaction_id);
-
-            # Renew any items as required
-            for my $account ( @{$lines} ) {
-
-                # Renew if required
-                if ( defined( $account->accountline->accounttype )
-                    && $account->accountline->accounttype eq "FU" )
-                {
-                    if (
-                        CheckIfIssuedToPatron(
-                            $account->accountline->borrowernumber
-                              ->borrowernumber,
-                            $account->accountline->itemnumber->biblionumber
-                        )
-                      )
-                    {
-                        my $datedue = AddRenewal(
-                            $account->accountline->borrowernumber
-                              ->borrowernumber,
-                            $account->accountline->itemnumber->itemnumber
-                        );
-                        C4::Circulation::_FixOverduesOnReturn(
-                            $account->accountline->borrowernumber
-                              ->borrowernumber,
-                            $account->accountline->itemnumber->itemnumber
-                        );
-                    }
-                }
-            }
-
-            # Respond with OK
-            my $response = new CGI;
-            my $reply    = XML::LibXML::Document->new( '1.0', 'utf-8' );
-            my $root     = $reply->createElement("wpmmessagevalidation");
-            my $md5      = $xml->findvalue('/wpmpaymentrequest/@msgid');
-            $root->setAttribute( 'msgid' => "$md5" );
-
-            my $validation = $reply->createElement('validation');
-            $validation->appendTextNode("1");
-            $root->appendChild($validation);
-
-            my $validationmessage = $reply->createElement('validationmessage');
-            my $success           = XML::LibXML::CDATASection->new("Success");
-            $validationmessage->appendChild($success);
-            $root->appendChild($validationmessage);
-
-            $reply->setDocumentElement($root);
-
-            print CGI->header('text/xml');
-            print $reply->toString();
+    my ( $template, $borrowernumber ) = get_template_and_user(
+        {
+            template_name =>
+              $self->mbf_path('opac_online_payment_end.tt'),
+            query           => $cgi,
+            type            => 'opac',
+            authnotrequired => 0,
+            is_plugin       => 1,
         }
-        else {
-            # Update transaction status
-            #
-            # Respond OK
+    );
 
-            my $reply = XML::LibXML::Document->new( '1.0', 'utf-8' );
-            my $root  = $reply->createElement("wpmmessagevalidation");
-            my $md5      = $xml->findvalue('/wpmpaymentrequest/@msgid');
-            $root->setAttribute( 'msgid' => "$md5" );
+    my $transaction_id = $cgi->param('transaction_id');
 
-            my $validation = $reply->createElement('validation');
-            $validation->appendTextNode("1");
-            $root->appendChild($validation);
+    # Check payment went through here
+    my $table = $self->get_qualified_table_name('wpm_transactions');
+    my $dbh = C4::Context->dbh;
+    my $sth = $dbh->prepare("SELECT accountline_id FROM $table WHERE transaction_id = ?");
+    $sth->execute($transaction_id);
+    my ($accountline_id) = $sth->fetchrow_array();
 
-            my $validationmessage = $reply->createElement('validationmessage');
-            my $success           = XML::LibXML::CDATASection->new("Success");
-            $validationmessage->appendChild($success);
-            $root->appendChild($validationmessage);
+    my $line               = Koha::Account::Lines->find( { accountlines_id => $accountline_id } );
+    my $transaction_value  = $line->amount;
+    my $transaction_amount = sprintf "%.2f", $transaction_value;
+    $transaction_amount =~ s/-//g;
 
-            $reply->setDocumentElement($root);
-
-            print CGI->header('text/xml');
-            print $reply->toString();
-        }
-
-    }
-    else {
-        warn "Found WPM redirect back\n";
-
-        my ( $template, $borrowernumber ) = get_template_and_user(
-            {
-                template_name =>
-                  $self->mbf_path('opac_online_payment_end.tt'),
-                query           => $cgi,
-                type            => 'opac',
-                authnotrequired => 0,
-                is_plugin       => 1,
-            }
+    if (defined($transaction_value)) {
+        $template->param(
+            borrower      => scalar Koha::Patrons->find($borrowernumber),
+            message       => 'valid_payment',
+            message_value => $transaction_amount
         );
-
-       $template->param(
-          message	     => 'valid_payment'
-       );
-
-        print $cgi->header();
-        print $template->output();
+    } else {
+        $template->param(
+            borrower      => scalar Koha::Patrons->find($borrowernumber),
+            message       => 'no_amount'
+        );
     }
+
+    print $cgi->header();
+    print $template->output();
 }
 
 ## If your plugin needs to add some javascript in the OPAC, you'll want
