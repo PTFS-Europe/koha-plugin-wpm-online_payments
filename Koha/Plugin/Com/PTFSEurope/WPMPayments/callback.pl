@@ -20,6 +20,7 @@
 use CGI qw( -utf8 );
 
 use C4::Context;
+use C4::Circulation;
 use C4::Auth;
 use Koha::Account;
 use Koha::Account::Lines;
@@ -88,19 +89,20 @@ if ( $success eq '1' ) {
 
     # Renew any items as required
     for my $line ( @{$lines} ) {
+        my $item = Koha::Items->find({itemnumber => $line->itemnumber });
 
         # Renew if required
         if ( defined( $line->accounttype )
             && $line->accounttype eq "FU" )
         {
             if (
-                CheckIfIssuedToPatron(
+                C4::Circulation::CheckIfIssuedToPatron(
                     $line->borrowernumber,
-                    $line->itemnumber
+                    $item->biblionumber
                 )
               )
             {
-                my $datedue = AddRenewal(
+                my $datedue = C4::Circulation::AddRenewal(
                     $line->borrowernumber,
                     $line->itemnumber
                 );
