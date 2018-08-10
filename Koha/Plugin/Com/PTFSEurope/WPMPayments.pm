@@ -12,6 +12,7 @@ use Koha::Patrons;
 
 use XML::LibXML;
 use Digest::MD5 qw(md5_hex);
+use HTML::Entities;
 
 ## Here we set our plugin version
 our $VERSION = "00.00.01";
@@ -257,8 +258,9 @@ sub opac_online_payment_begin {
         if ( defined( $accountline->description )
             && $accountline->description ne '' )
         {
+            my $data_description = $accountline->description;
             my $data =
-              XML::LibXML::CDATASection->new( $accountline->description );
+              XML::LibXML::CDATASection->new( encode_entities($data_description) );
             $description->appendChild($data);
         }
         $payments->appendChild($description);
@@ -450,7 +452,7 @@ sub install() {
     my $table = $self->get_qualified_table_name('wpm_transactions');
 
     return C4::Context->dbh->do( "
-        CREATE TABLE  $table (
+        CREATE TABLE IF NOT EXISTS $table (
             `transaction_id` INT( 11 ) NOT NULL AUTO_INCREMENT,
             `accountline_id` INT( 11 ),
             `updated` TIMESTAMP,
