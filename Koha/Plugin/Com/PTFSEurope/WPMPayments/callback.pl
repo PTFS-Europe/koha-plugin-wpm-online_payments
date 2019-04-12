@@ -89,7 +89,7 @@ if ( $success eq '1' ) {
 
     # Renew any items as required
     for my $line ( @{$lines} ) {
-        my $item = Koha::Items->find({itemnumber => $line->itemnumber });
+        my $item = Koha::Items->find( { itemnumber => $line->itemnumber } );
 
         # Renew if required
         if ( defined( $line->accounttype )
@@ -97,19 +97,20 @@ if ( $success eq '1' ) {
         {
             if (
                 C4::Circulation::CheckIfIssuedToPatron(
-                    $line->borrowernumber,
-                    $item->biblionumber
+                    $line->borrowernumber, $item->biblionumber
                 )
               )
             {
-                my $datedue = C4::Circulation::AddRenewal(
-                    $line->borrowernumber,
-                    $line->itemnumber
-                );
-                C4::Circulation::_FixOverduesOnReturn(
-                    $line->borrowernumber,
-                    $line->itemnumber
-                );
+                my ( $can, $error ) =
+                  C4::Circulation::CanBookBeRenewed( $line->borrowernumber,
+                    $line->itemnumber, 0 );
+                if ($can) {
+                    my $datedue =
+                      C4::Circulation::AddRenewal( $line->borrowernumber,
+                        $line->itemnumber );
+                    C4::Circulation::_FixOverduesOnReturn(
+                        $line->borrowernumber, $line->itemnumber );
+                }
             }
         }
     }
