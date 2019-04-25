@@ -364,17 +364,10 @@ sub opac_online_payment_end {
     $sth->execute($transaction_id);
     my ($accountline_id) = $sth->fetchrow_array();
 
-    my $line =
-      Koha::Account::Lines->find( { accountlines_id => $accountline_id } );
-    my $transaction_value = $line->amount;
-    my $transaction_amount = sprintf "%.2f", $transaction_value;
-    $transaction_amount =~ s/^-//g;
-
-    if ( defined($transaction_value) ) {
+    if ( defined($accountline_id) ) {
         $template->param(
             borrower      => scalar Koha::Patrons->find($borrowernumber),
-            message       => 'valid_payment',
-            message_value => $transaction_amount
+            message       => 'valid_payment'
         );
     }
     else {
