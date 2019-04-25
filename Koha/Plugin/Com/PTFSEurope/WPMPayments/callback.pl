@@ -65,51 +65,62 @@ if ( $success eq '1' ) {
 
     my $totalpaid = $xml->findvalue('/wpmpaymentrequest/transaction/totalpaid');
 
-    # Make Payment
+    # Prepare transaction logging
+    my $dbh = C4::Context->dbh;
+    my $table = $paymentHandler->get_qualified_table_name('wpm_transactions');
+    $dbh->do("DELETE FROM $table WHERE transaction_id = $transaction_id;");
+    my $sth   = $dbh->prepare(
+        "INSERT INTO $table (accountline_id, transaction_id) VALUES ( ?, ? )");
+
+    # Make Payments
+    my $account = Koha::Account->new( { patron_id => $borrowernumber } );
     my $lines = Koha::Account::Lines->search(
         { accountlines_id => { 'in' => \@accountline_ids } } )->as_list;
-    my $account = Koha::Account->new( { patron_id => $borrowernumber } );
-    my $accountline_id = $account->pay(
-        {
-            amount     => $totalpaid,
-            note       => 'WPM Payment',
-            library_id => $borrower->branchcode,
-            lines => $lines,    # Arrayref of Koha::Account::Line objects to pay
-                                #account_type => $type,  # accounttype code
-                 #offset_type  => $offset_type,    # offset type code
-        }
-    );
-
-    # Link payment to wpm_transactions
-    my $dbh   = C4::Context->dbh;
-    my $table = $paymentHandler->get_qualified_table_name('wpm_transactions');
-    my $sth   = $dbh->prepare(
-        "UPDATE $table SET accountline_id = ? WHERE transaction_id = ?");
-    $sth->execute( $accountline_id, $transaction_id );
-
-    # Renew any items as required
     for my $line ( @{$lines} ) {
-        my $item = Koha::Items->find( { itemnumber => $line->itemnumber } );
+        my $to_pay = $line->amountoutstanding;
+        $totalpaid = $totalpaid - $to_pay;
+        if ( $totalpaid > 0 ) {
+            my $credit = $account->add_credit(
+                {
+                    amount     => $to_pay,
+                    note       => 'WPM Payment',
+                    user_id    => undef,
+                    library_id => $borrower->branchcode,
+                    type       => 'payment',
+                    item_id    => $line->itemnumber
+                }
+            );
+            my $this_line = Koha::Account::lines->search(
+                { accountlines_id => $line->accountlines_id } );
+            $credit->apply(
+                { debits => $this_line, offset_type => 'Payment' } );
 
-        # Renew if required
-        if ( defined( $line->accounttype )
-            && $line->accounttype eq "FU" )
-        {
-            if (
-                C4::Circulation::CheckIfIssuedToPatron(
-                    $line->borrowernumber, $item->biblionumber
-                )
-              )
+            # Link payment to wpm_transactions
+            $sth->execute( $accountline_id, $transaction_id );
+
+            # Renew any items as required
+            my $item = Koha::Items->find( { itemnumber => $line->itemnumber } );
+
+            # Renew if required
+            if ( defined( $line->accounttype )
+                && $line->accounttype eq "FU" )
             {
-                my ( $can, $error ) =
-                  C4::Circulation::CanBookBeRenewed( $line->borrowernumber,
-                    $line->itemnumber, 0 );
-                if ($can) {
-                    my $datedue =
-                      C4::Circulation::AddRenewal( $line->borrowernumber,
-                        $line->itemnumber );
-                    C4::Circulation::_FixOverduesOnReturn(
-                        $line->borrowernumber, $line->itemnumber );
+                if (
+                    C4::Circulation::CheckIfIssuedToPatron(
+                        $line->borrowernumber, $item->biblionumber
+                    )
+                  )
+                {
+                    my ( $can, $error ) =
+                      C4::Circulation::CanBookBeRenewed( $line->borrowernumber,
+                        $line->itemnumber, 0 );
+                    if ($can) {
+                        my $datedue =
+                          C4::Circulation::AddRenewal( $line->borrowernumber,
+                            $line->itemnumber );
+                        C4::Circulation::_FixOverduesOnReturn(
+                            $line->borrowernumber, $line->itemnumber );
+                    }
                 }
             }
         }
