@@ -30,6 +30,8 @@ use Koha::Plugin::Com::PTFSEurope::WPMPayments;
 use XML::LibXML;
 use Digest::MD5 qw(md5_hex);
 
+my $debug = 0;
+
 my $paymentHandler = Koha::Plugin::Com::PTFSEurope::WPMPayments->new;
 
 # Parse XML
@@ -49,6 +51,7 @@ my $success        = $xml->findvalue('/wpmpaymentrequest/transaction/success');
 my $borrower = Koha::Patrons->find($borrowernumber);
 
 if ( $success eq '1' ) {
+    $debug and warn "Recieved 'success' from WPM";
 
     # Extract accountlines to pay
     my @accountline_ids = ();
@@ -62,12 +65,16 @@ if ( $success eq '1' ) {
             }
         }
     }
+    $debug and warn "Accountlines: " . join(', ',@accountline_ids);
 
     my $totalpaid = $xml->findvalue('/wpmpaymentrequest/transaction/totalpaid');
+    $debug and warn "Total to offset: $totalpaid";
 
     # Prepare transaction logging
     my $dbh = C4::Context->dbh;
     my $table = $paymentHandler->get_qualified_table_name('wpm_transactions');
+    $debug and warn "Cleaning up original transaction";
+    $debug and warn "DELETE FROM $table WHERE transaction_id = $transaction_id;";
     $dbh->do("DELETE FROM $table WHERE transaction_id = $transaction_id;");
     my $sth   = $dbh->prepare(
         "INSERT INTO $table (accountline_id, transaction_id) VALUES ( ?, ? )");
@@ -78,7 +85,6 @@ if ( $success eq '1' ) {
         { accountlines_id => { 'in' => \@accountline_ids } } )->as_list;
     for my $line ( @{$lines} ) {
         my $to_pay = $line->amountoutstanding;
-        $totalpaid = $totalpaid - $to_pay;
         if ( $totalpaid > 0 ) {
             my $credit = $account->add_credit(
                 {
@@ -90,13 +96,16 @@ if ( $success eq '1' ) {
                     item_id    => $line->itemnumber
                 }
             );
+            $debug and warn "Credit added: $to_pay";
             my $this_line = Koha::Account::lines->search(
                 { accountlines_id => $line->accountlines_id } );
             $credit->apply(
                 { debits => $this_line, offset_type => 'Payment' } );
+            $debug and warn "Credit applied to: " . $line->accountlines_id;
 
             # Link payment to wpm_transactions
-            $sth->execute( $accountline_id, $transaction_id );
+            $sth->execute( $credit->accountlines_id, $transaction_id );
+            $debug and warn "Credit linked to WPM transaction: " . $transaction_id;
 
             # Renew any items as required
             my $item = Koha::Items->find( { itemnumber => $line->itemnumber } );
@@ -123,6 +132,11 @@ if ( $success eq '1' ) {
                     }
                 }
             }
+            $totalpaid = $totalpaid - $to_pay;
+            $debug and warn "Amount left to offset: $totalpaid";
+        }
+        else {
+            $debug and warn "!!Ran out of credit!!";
         }
     }
 

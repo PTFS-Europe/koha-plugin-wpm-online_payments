@@ -17,6 +17,8 @@ use HTML::Entities;
 ## Here we set our plugin version
 our $VERSION = "00.00.02";
 
+my $debug = 0;
+
 ## Here is our metadata, some keys are required, some are optional
 our $metadata = {
     name            => 'WPM Online Payments Plugin',
@@ -54,6 +56,7 @@ sub opac_online_payment {
 ## Initiate the payment process
 sub opac_online_payment_begin {
     my ( $self, $args ) = @_;
+    $debug and warn "Inside opac_online_payment_begin for: ". caller ."\n";
     my $cgi    = $self->{'cgi'};
     my $schema = Koha::Database->new()->schema();
 
