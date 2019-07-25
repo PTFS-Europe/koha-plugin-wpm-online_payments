@@ -30,6 +30,8 @@ use Koha::Plugin::Com::PTFSEurope::WPMPayments;
 use XML::LibXML;
 use Digest::MD5 qw(md5_hex);
 
+my $debug = 0;
+
 my $paymentHandler = Koha::Plugin::Com::PTFSEurope::WPMPayments->new;
 
 # Parse XML
@@ -49,6 +51,8 @@ my $success        = $xml->findvalue('/wpmpaymentrequest/transaction/success');
 my $borrower = Koha::Patrons->find($borrowernumber);
 
 if ( $success eq '1' ) {
+
+    $debug and warn "Recieved 'success' from WPM";
 
     # Extract accountlines to pay
     my @accountline_ids = ();
@@ -79,6 +83,7 @@ if ( $success eq '1' ) {
                  #offset_type  => $offset_type,    # offset type code
         }
     );
+    $debug and warn "Payment of $totalpaid made against " . join(', ', @accountline_ids);
 
     # Link payment to wpm_transactions
     my $dbh   = C4::Context->dbh;
@@ -86,6 +91,8 @@ if ( $success eq '1' ) {
     my $sth   = $dbh->prepare(
         "UPDATE $table SET accountline_id = ? WHERE transaction_id = ?");
     $sth->execute( $accountline_id, $transaction_id );
+    $debug and warn "Update the original transaction";
+    $debug and warn "UPDATE $table SET accountline_id = $accountline_id WHERE transaction_id = $transaction_id;";
 
     # Renew any items as required
     for my $line ( @{$lines} ) {
@@ -110,6 +117,9 @@ if ( $success eq '1' ) {
                         $line->itemnumber );
                     C4::Circulation::_FixOverduesOnReturn(
                         $line->borrowernumber, $line->itemnumber );
+                    $debug and warn "Renewal of $line->itemnumber successful";
+                } else {
+                    $debug and warn "Renewal of $line->itemnumber blocked";
                 }
             }
         }

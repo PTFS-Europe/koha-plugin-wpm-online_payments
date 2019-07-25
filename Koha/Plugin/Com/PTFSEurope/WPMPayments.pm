@@ -17,6 +17,8 @@ use HTML::Entities;
 ## Here we set our plugin version
 our $VERSION = "00.00.02";
 
+my $debug = 0;
+
 ## Here is our metadata, some keys are required, some are optional
 our $metadata = {
     name            => 'WPM Online Payments Plugin',
@@ -54,6 +56,8 @@ sub opac_online_payment {
 ## Initiate the payment process
 sub opac_online_payment_begin {
     my ( $self, $args ) = @_;
+    $debug and warn "Inside opac_online_payment_begin for: ". caller ."\n";
+
     my $cgi    = $self->{'cgi'};
     my $schema = Koha::Database->new()->schema();
 
@@ -235,6 +239,7 @@ sub opac_online_payment_begin {
 
     # Add the accountlines to pay off
     my @accountline_ids = $cgi->multi_param('accountline');
+    $debug and warn "Adding accountlines to transaction: " . join(', ', @accountline_ids);
     my $accountlines    = $schema->resultset('Accountline')
       ->search( { accountlines_id => \@accountline_ids } );
     my $now               = DateTime->now;
@@ -319,6 +324,7 @@ sub opac_online_payment_begin {
 
     # Add signature to xml
     $sum = sprintf "%.2f", $sum;
+    $debug and warn "Total to pay" . $sum;
     my $msgid =
       md5_hex( $self->retrieve_data('WPMClientID')
           . $transaction_id
@@ -342,6 +348,8 @@ sub opac_online_payment_begin {
 ## Complete the payment process
 sub opac_online_payment_end {
     my ( $self, $args ) = @_;
+    
+    $debug and warn "Inside opac_online_payment_end for: ". caller ."\n";
     my $cgi = $self->{'cgi'};
 
     my ( $template, $borrowernumber ) = get_template_and_user(
