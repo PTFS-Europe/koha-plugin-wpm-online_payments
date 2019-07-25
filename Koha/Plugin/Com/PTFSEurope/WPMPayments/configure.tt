@@ -8,67 +8,112 @@
 
 <div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/plugins/plugins-home.pl">Plugins</a> &rsaquo; WPM Online Payments &rsaquo; Configuration</div>
 
-<div id="doc3">
-    <!-- We can access our own plugins resource files using the PLUGIN_PATH variable. -->
-    <img src="https://www.wpmeducation.com/includes/resource/images/wpm-education.png" />
-    <h3>Koha: WPM Online Payments: Configuration</h3>
+<div class="main container-fluid">
+    <div class="row">
 
-    <!-- Notice our form here has no 'action', this is good, it means that our forms will always get passed back to 'plugins/run.pl'. You could hard code it instead if you prefer -->
-    <form method="get">
-        <!-- Always pass these two parameters so the plugin system knows what to execute! -->
-        <input type="hidden" name="class" value="[% CLASS %]"/>
-        <input type="hidden" name="method" value="[% METHOD %]"/>
+        <div class="col-sm-10 col-sm-push-2">
+            <main>
 
-        <label for="enable_opac_payments">Enable OPAC Account Payments: </label>
-        <select name="enable_opac_payments">
-            [% IF enable_opac_payments == 'No' %]
-                <option value="No" selected="selected">No</option>
-            [% ELSE %]
-                <option value="No">No</option>
-            [% END %]
+                <h3>Koha: WPM Online Payments: Configuration</h3>
+            
+                <!-- Notice our form here has no 'action', this is good, it means that our forms will always get passed back to 'plugins/run.pl'. You could hard code it instead if you prefer -->
+                <form method="get">
+                    <!-- Always pass these two parameters so the plugin system knows what to execute! -->
+                    <input type="hidden" name="class" value="[% CLASS %]"/>
+                    <input type="hidden" name="method" value="[% METHOD %]"/>
 
-            [% IF enable_opac_payments == 'Yes' %]
-                <option value="Yes" selected="selected">Yes</option>
-            [% ELSE %]
-                <option value="Yes">Yes</option>
-            [% END %]
-        </select>
+                    <fieldset class="rows">
+                        <legend>Global Settings</legend>
 
-        <p>
+                        <ol>
+                            <li>
+                                <label for="enable_opac_payments">Enable OPAC Account Payments: </label>
+                                <select name="enable_opac_payments">
+                                    [% IF enable_opac_payments == 'No' %]
+                                    <option value="No" selected="selected">No</option>
+                                    [% ELSE %]
+                                    <option value="No">No</option>
+                                    [% END %]
 
-        <label for="WPMClientID">WPM Client ID: </label>
-        <input type="text" name="WPMClientID" value="[% WPMClientID %]" />
+                                    [% IF enable_opac_payments == 'Yes' %]
+                                    <option value="Yes" selected="selected">Yes</option>
+                                    [% ELSE %]
+                                    <option value="Yes">Yes</option>
+                                    [% END %]
+                                </select>
+                            </li>
+                        </ol>
+                    </fieldset>
+            
+                    <fieldset class="rows">
+                        <legend>WPM Settings</legend>
+                        <ol>
+                            <li>
+                                <label for="WPMClientID">Client ID: </label>
+                                <input type="text" name="WPMClientID" value="[% WPMClientID %]" />
+                            </li>
 
-        <p>
+                            <li>
+                                <label for="WPMSecret">Secret: </label>
+                                <input type="text" name="WPMSecret" value="[% WPMSecret %]" />
+                            </li>
 
-        <label for="WPMSecret">WPM Secret: </label>
-        <input type="text" name="WPMSecret" value="[% WPMSecret %]" />
+                            <li>
+                                <label for="WPMPathway">Pathway: </label>
+                                <input type="text" name="WPMPathway" value="[% WPMPathway %]" />
+                            </li>
 
-        <p>
+                            <li>
+                                <label for="WPMPathwayID">Pathway ID: </label>
+                                <input type="text" name="WPMPathwayID" value="[% WPMPathwayID %]" />
+                            </li>
+                            
+                            <li>
+                                <label for="WPMDepartmentID">Department ID: </label>
+                                <input type="text" name="WPMDepartmentID" value="[% WPMDepartmentID %]" />
+                            </li>
+                        </ol>
+                    </fieldset>
+            
+                    <fieldset class="rows">
+                        <legend>Payment Field Settings</legend>
+                        <ol>
+                            <li>
+                               <label for="DefaultVATDesc">VAT Description: </label>
+                               <input type="text" name="DefaultVATDesc" value="[% DefaultVATDesc %]" />
+                            </li>
 
-        <label for="WPMPathway">WPM Pathway: </label>
-        <input type="text" name="WPMPathway" value="[% WPMPathway %]" />
+                            <li>
+                                <label for="DefaultVATCode">VAT Code: </label>
+                                <input type="text" name="DefaultVATCode" value="[% DefaultVATCode %]" />
+                            </li>
 
-        <p>
+                            <li>
+                                <label for="DefaultVATRate">VAT Rate: </label>
+                                <input type="text" name="DefaultVATRate" value="[% DefaultVATRate %]" />
+                            </li>
 
-        <label for="WPMPathwayID">WPM Pathway ID: </label>
-        <input type="text" name="WPMPathwayID" value="[% WPMPathwayID %]" />
+                            <li>
+                                <label for="payment_customfield1">Custom Field 1: </label>
+                                <input type="text" name="payment_customfield1" value="[% payment_customfield1 %]" />
+                            </li>
+                        </ol>
+                    </fieldset>
+            
+                    <input type="hidden" name="save" value="1" />
+                    <input type="submit" value="Save configuration" />
+                </form>
+            </main>
+        </div>
+        
+        <div class="col-sm-2 col-sm-pull-10">
+            <aside>
+            
+            <!-- We can access our own plugins resource files using the PLUGIN_PATH variable. -->
+            <img src="https://www.wpmeducation.com/includes/resource/images/wpm-education.png" />
+            </aside>
+        </div>
 
-        <p>
-
-        <label for="WPMDepartmentID">WPM Department ID: </label>
-        <input type="text" name="WPMDepartmentID" value="[% WPMDepartmentID %]" />
-
-        <p>
-
-        <label for="payment_customfield1">Payment Custom Field 1: </label>
-        <input type="text" name="payment_customfield1" value="[% payment_customfield1 %]" />
-
-        <p>
-
-        <input type="hidden" name="save" value="1" />
-
-        <input type="submit" value="Save configuration" />
-    </form>
+    </div>
 
 [% INCLUDE 'intranet-bottom.inc' %]

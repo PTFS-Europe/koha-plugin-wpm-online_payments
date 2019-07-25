@@ -237,6 +237,11 @@ sub opac_online_payment_begin {
         $root->appendChild($tag);
     }
 
+    # Retrieve default field values
+    my $DefaultVATDesc = $self->retrieve_data('DefaultVATDesc');
+    my $DefaultVATCode = $self->retrieve_data('DefaultVATCode');
+    my $DefaultVATRate = $self->retrieve_data('DefaultVATRate');
+
     # Add the accountlines to pay off
     my @accountline_ids = $cgi->multi_param('accountline');
     $debug and warn "Adding accountlines to transaction: " . join(', ', @accountline_ids);
@@ -294,14 +299,14 @@ sub opac_online_payment_begin {
         $payment->appendChild($amounttopayexvat);
 
         my $vatdesc = $xml->createElement("vatdesc");
-        $vatdesc->appendTextNode('Exempt');
+        $vatdesc->appendTextNode($DefaultVATDesc);
         $payment->appendChild($vatdesc);
 
         my $vatcode = $xml->createElement("vatcode");
-        $vatcode->appendTextNode('E');
+        $vatcode->appendTextNode($DefaultVATCode);
         $payment->appendChild($vatcode);
 
-        my $vatrate = $xml->createElement("vatrate");
+        my $vatrate = $xml->createElement($DefaultVATRate);
         $vatrate->appendTextNode('0');
         $payment->appendChild($vatrate);
 
@@ -433,6 +438,9 @@ sub configure {
             WPMPathway      => $self->retrieve_data('WPMPathway'),
             WPMPathwayID    => $self->retrieve_data('WPMPathwayID'),
             WPMDepartmentID => $self->retrieve_data('WPMDepartmentID'),
+            DefaultVATDesc  => $self->retrieve_data('DefaultVATDesc'),
+            DefaultVATCode  => $self->retrieve_data('DefaultVATCode'),
+            DefaultVATRate  => $self->retrieve_data('DefaultVATRate'),
             payment_customfield1 =>
               $self->retrieve_data('payment_customfield1'),
         );
@@ -449,6 +457,9 @@ sub configure {
                 WPMPathway           => $cgi->param('WPMPathway'),
                 WPMPathwayID         => $cgi->param('WPMPathwayID'),
                 WPMDepartmentID      => $cgi->param('WPMDepartmentID'),
+                DefaultVATDesc       => $cgi->param('DefaultVATDesc'),
+                DefaultVATCode       => $cgi->param('DefaultVATCode'),
+                DefaultVATRate       => $cgi->param('DefaultVATRate'),
                 payment_customfield1 => $cgi->param('payment_customfield1'),
                 last_configured_by   => C4::Context->userenv->{'number'},
             }
@@ -463,6 +474,14 @@ sub configure {
 ## or false if it failed.
 sub install() {
     my ( $self, $args ) = @_;
+
+    $self->store_data(
+        {
+            DefaultVATDesc => 'Exempt',
+            DefaultVATCode => 'E',
+            DefaultVATRate => 0,
+        }    
+    );
 
     my $table = $self->get_qualified_table_name('wpm_transactions');
 
