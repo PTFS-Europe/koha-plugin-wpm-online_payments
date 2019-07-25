@@ -274,8 +274,12 @@ sub opac_online_payment_begin {
         my $payment = $xml->createElement("payment");
         $payment->setAttribute( 'payid' => $accountline->accountlines_id );
 
-        my $customfield1 = $xml->createElement("customfield1");
-        $payment->appendChild($customfield1);
+        my $custom1 = $self->retrieve_data('payment_customfield1');
+        if ($custom1) {
+            my $customfield1 = $xml->createElement("customfield1");
+            $customfield1->appendTextNode($custom1);
+            $payment->appendChild($customfield1);
+        }
 
         my $amounttopay = $xml->createElement("amounttopay");
         $amounttopay->appendTextNode($amount);
@@ -429,6 +433,8 @@ sub configure {
             WPMPathway      => $self->retrieve_data('WPMPathway'),
             WPMPathwayID    => $self->retrieve_data('WPMPathwayID'),
             WPMDepartmentID => $self->retrieve_data('WPMDepartmentID'),
+            payment_customfield1 =>
+              $self->retrieve_data('payment_customfield1'),
         );
 
         print $cgi->header();
@@ -439,10 +445,11 @@ sub configure {
             {
                 enable_opac_payments => $cgi->param('enable_opac_payments'),
                 WPMClientID          => $cgi->param('WPMClientID'),
+                WPMSecret            => $cgi->param('WPMSecret'),
                 WPMPathway           => $cgi->param('WPMPathway'),
                 WPMPathwayID         => $cgi->param('WPMPathwayID'),
                 WPMDepartmentID      => $cgi->param('WPMDepartmentID'),
-                WPMSecret            => $cgi->param('WPMSecret'),
+                payment_customfield1 => $cgi->param('payment_customfield1'),
                 last_configured_by   => C4::Context->userenv->{'number'},
             }
         );

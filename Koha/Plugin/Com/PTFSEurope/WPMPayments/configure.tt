@@ -61,6 +61,11 @@
 
         <p>
 
+        <label for="payment_customfield1">Payment Custom Field 1: </label>
+        <input type="text" name="payment_customfield1" value="[% payment_customfield1 %]" />
+
+        <p>
+
         <input type="hidden" name="save" value="1" />
 
         <input type="submit" value="Save configuration" />
