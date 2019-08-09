@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v00.00.04] - 2019-08-09
+
 ### Fixed
 - Remove $cgi->param called in list context warnings from configuration code
 - Fixed typo in configurable VAT field keys
