@@ -306,8 +306,8 @@ sub opac_online_payment_begin {
         $vatcode->appendTextNode($DefaultVATCode);
         $payment->appendChild($vatcode);
 
-        my $vatrate = $xml->createElement($DefaultVATRate);
-        $vatrate->appendTextNode('0');
+        my $vatrate = $xml->createElement("vatrate");
+        $vatrate->appendTextNode($DefaultVATRate);
         $payment->appendChild($vatrate);
 
         my $dateofpayment = $xml->createElement("dateofpayment");
