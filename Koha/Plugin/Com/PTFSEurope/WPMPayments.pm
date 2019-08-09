@@ -451,16 +451,16 @@ sub configure {
     else {
         $self->store_data(
             {
-                enable_opac_payments => $cgi->param('enable_opac_payments'),
-                WPMClientID          => $cgi->param('WPMClientID'),
-                WPMSecret            => $cgi->param('WPMSecret'),
-                WPMPathway           => $cgi->param('WPMPathway'),
-                WPMPathwayID         => $cgi->param('WPMPathwayID'),
-                WPMDepartmentID      => $cgi->param('WPMDepartmentID'),
-                DefaultVATDesc       => $cgi->param('DefaultVATDesc'),
-                DefaultVATCode       => $cgi->param('DefaultVATCode'),
-                DefaultVATRate       => $cgi->param('DefaultVATRate'),
-                payment_customfield1 => $cgi->param('payment_customfield1'),
+                enable_opac_payments => scalar $cgi->param('enable_opac_payments'),
+                WPMClientID          => scalar $cgi->param('WPMClientID'),
+                WPMSecret            => scalar $cgi->param('WPMSecret'),
+                WPMPathway           => scalar $cgi->param('WPMPathway'),
+                WPMPathwayID         => scalar $cgi->param('WPMPathwayID'),
+                WPMDepartmentID      => scalar $cgi->param('WPMDepartmentID'),
+                DefaultVATDesc       => scalar $cgi->param('DefaultVATDesc'),
+                DefaultVATCode       => scalar $cgi->param('DefaultVATCode'),
+                DefaultVATRate       => scalar $cgi->param('DefaultVATRate'),
+                payment_customfield1 => scalar $cgi->param('payment_customfield1'),
                 last_configured_by   => C4::Context->userenv->{'number'},
             }
         );
