@@ -33,3 +33,5 @@ You will need to add to the apache config for your site:
          AddHandler cgi-script .pl
     </Directory>
 ```
+
+You may also need to add to PERL5LIB
