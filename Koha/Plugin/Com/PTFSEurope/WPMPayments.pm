@@ -56,7 +56,7 @@ sub opac_online_payment {
 ## Initiate the payment process
 sub opac_online_payment_begin {
     my ( $self, $args ) = @_;
-    $debug and warn "Inside opac_online_payment_begin for: ". caller ."\n";
+    $debug and warn "Inside opac_online_payment_begin for: " . caller . "\n";
 
     my $cgi    = $self->{'cgi'};
     my $schema = Koha::Database->new()->schema();
@@ -77,8 +77,8 @@ sub opac_online_payment_begin {
     # Create a transaction
     my $dbh   = C4::Context->dbh;
     my $table = $self->get_qualified_table_name('wpm_transactions');
-    my $sth = $dbh->prepare("INSERT INTO $table (`transaction_id`) VALUES (?)");
-    $sth->execute("NULL");
+    my $sth = $dbh->prepare("INSERT INTO $table (`accountline_id`) VALUES (?)");
+    $sth->execute(undef);
 
     my $transaction_id =
       $dbh->last_insert_id( undef, undef, qw(wpm_transactions transaction_id) );
@@ -102,6 +102,16 @@ sub opac_online_payment_begin {
     # Construct cancel URI
     my $cancel_url = URI->new( C4::Context->preference('OPACBaseURL')
           . "/cgi-bin/koha/opac-account.pl" );
+
+    # Construct custom fields
+    my %customfields;
+    for my $i ( 1 .. 10 ) {
+        $customfields{$i} = $self->retrieve_data("customfield$i");
+        if ( $customfields{$i} =~ m/(.*)\[% borrower\.(.*) %\](.*)/ ) {
+            my ( $pre, $variable, $post ) = ( $1, $2, $3 );
+            $customfields{$i} = $pre . $borrower_result->$variable . $post;
+        }
+    }
 
     # Construct XML POST
     my $xml = XML::LibXML::Document->new( '1.0', 'utf-8' );
@@ -206,18 +216,45 @@ sub opac_online_payment_begin {
             name  => 'billcountry',
             value => { value => $borrower_result->country, cdata => 1 }
         },
-        { name => 'customfield1', value => undef },
-        { name => 'customfield2', value => undef },
-        { name => 'customfield3', value => undef },
-        { name => 'customfield4', value => undef },
-        { name => 'customfield5', value => undef },
-        { name => 'customfield6', value => undef },
-        { name => 'customfield7', value => undef },
-        { name => 'customfield8', value => undef },
-        { name => 'customfield9', value => undef },
+        {
+            name  => 'customfield1',
+            value => { value => $customfields{1}, cdata => 1 }
+        },
+        {
+            name  => 'customfield2',
+            value => { value => $customfields{2}, cdata => 1 }
+        },
+        {
+            name  => 'customfield3',
+            value => { value => $customfields{3}, cdata => 1 }
+        },
+        {
+            name  => 'customfield4',
+            value => { value => $customfields{4}, cdata => 1 }
+        },
+        {
+            name  => 'customfield5',
+            value => { value => $customfields{5}, cdata => 1 }
+        },
+        {
+            name  => 'customfield6',
+            value => { value => $customfields{6}, cdata => 1 }
+        },
+        {
+            name  => 'customfield7',
+            value => { value => $customfields{7}, cdata => 1 }
+        },
+        {
+            name  => 'customfield8',
+            value => { value => $customfields{8}, cdata => 1 }
+        },
+        {
+            name  => 'customfield9',
+            value => { value => $customfields{9}, cdata => 1 }
+        },
         {
             name  => 'customfield10',
-            value => undef
+            value => { value => $customfields{10}, cdata => 1 }
         }
     );
 
@@ -244,8 +281,10 @@ sub opac_online_payment_begin {
 
     # Add the accountlines to pay off
     my @accountline_ids = $cgi->multi_param('accountline');
-    $debug and warn "Adding accountlines to transaction: " . join(', ', @accountline_ids);
-    my $accountlines    = $schema->resultset('Accountline')
+    $debug
+      and warn "Adding accountlines to transaction: "
+      . join( ', ', @accountline_ids );
+    my $accountlines = $schema->resultset('Accountline')
       ->search( { accountlines_id => \@accountline_ids } );
     my $now               = DateTime->now;
     my $dateoftransaction = $now->ymd('-') . ' ' . $now->hms(':');
@@ -270,7 +309,8 @@ sub opac_online_payment_begin {
         {
             my $data_description = $accountline->description;
             my $data =
-              XML::LibXML::CDATASection->new( encode_entities($data_description) );
+              XML::LibXML::CDATASection->new(
+                encode_entities($data_description) );
             $description->appendChild($data);
         }
         $payments->appendChild($description);
@@ -357,8 +397,8 @@ sub opac_online_payment_begin {
 ## Complete the payment process
 sub opac_online_payment_end {
     my ( $self, $args ) = @_;
-    
-    $debug and warn "Inside opac_online_payment_end for: ". caller ."\n";
+
+    $debug and warn "Inside opac_online_payment_end for: " . caller . "\n";
     my $cgi = $self->{'cgi'};
 
     my ( $template, $borrowernumber ) = get_template_and_user(
@@ -441,6 +481,16 @@ sub configure {
             DefaultVATDesc  => $self->retrieve_data('DefaultVATDesc'),
             DefaultVATCode  => $self->retrieve_data('DefaultVATCode'),
             DefaultVATRate  => $self->retrieve_data('DefaultVATRate'),
+            customfield1    => $self->retrieve_data('customfield1'),
+            customfield2    => $self->retrieve_data('customfield2'),
+            customfield3    => $self->retrieve_data('customfield3'),
+            customfield4    => $self->retrieve_data('customfield4'),
+            customfield5    => $self->retrieve_data('customfield5'),
+            customfield6    => $self->retrieve_data('customfield6'),
+            customfield7    => $self->retrieve_data('customfield7'),
+            customfield8    => $self->retrieve_data('customfield8'),
+            customfield9    => $self->retrieve_data('customfield9'),
+            customfield10   => $self->retrieve_data('customfield10'),
             payment_customfield1 =>
               $self->retrieve_data('payment_customfield1'),
         );
@@ -451,17 +501,29 @@ sub configure {
     else {
         $self->store_data(
             {
-                enable_opac_payments => scalar $cgi->param('enable_opac_payments'),
-                WPMClientID          => scalar $cgi->param('WPMClientID'),
-                WPMSecret            => scalar $cgi->param('WPMSecret'),
-                WPMPathway           => scalar $cgi->param('WPMPathway'),
-                WPMPathwayID         => scalar $cgi->param('WPMPathwayID'),
-                WPMDepartmentID      => scalar $cgi->param('WPMDepartmentID'),
-                DefaultVATDesc       => scalar $cgi->param('DefaultVATDesc'),
-                DefaultVATCode       => scalar $cgi->param('DefaultVATCode'),
-                DefaultVATRate       => scalar $cgi->param('DefaultVATRate'),
-                payment_customfield1 => scalar $cgi->param('payment_customfield1'),
-                last_configured_by   => C4::Context->userenv->{'number'},
+                enable_opac_payments =>
+                  scalar $cgi->param('enable_opac_payments'),
+                WPMClientID     => scalar $cgi->param('WPMClientID'),
+                WPMSecret       => scalar $cgi->param('WPMSecret'),
+                WPMPathway      => scalar $cgi->param('WPMPathway'),
+                WPMPathwayID    => scalar $cgi->param('WPMPathwayID'),
+                WPMDepartmentID => scalar $cgi->param('WPMDepartmentID'),
+                DefaultVATDesc  => scalar $cgi->param('DefaultVATDesc'),
+                DefaultVATCode  => scalar $cgi->param('DefaultVATCode'),
+                DefaultVATRate  => scalar $cgi->param('DefaultVATRate'),
+                customfield1    => scalar $cgi->param('customfield1'),
+                customfield2    => scalar $cgi->param('customfield2'),
+                customfield3    => scalar $cgi->param('customfield3'),
+                customfield4    => scalar $cgi->param('customfield4'),
+                customfield5    => scalar $cgi->param('customfield5'),
+                customfield6    => scalar $cgi->param('customfield6'),
+                customfield7    => scalar $cgi->param('customfield7'),
+                customfield8    => scalar $cgi->param('customfield8'),
+                customfield9    => scalar $cgi->param('customfield9'),
+                customfield10   => scalar $cgi->param('customfield10'),
+                payment_customfield1 =>
+                  scalar $cgi->param('payment_customfield1'),
+                last_configured_by => C4::Context->userenv->{'number'},
             }
         );
         $self->go_home();
@@ -480,7 +542,7 @@ sub install() {
             DefaultVATDesc => 'Exempt',
             DefaultVATCode => 'E',
             DefaultVATRate => 0,
-        }    
+        }
     );
 
     my $table = $self->get_qualified_table_name('wpm_transactions');

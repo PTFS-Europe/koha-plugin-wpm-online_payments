@@ -5,6 +5,7 @@
 <body>
 [% INCLUDE 'header.inc' %]
 [% INCLUDE 'cat-search.inc' %]
+[%- stag = "[\%" etag = "%\]" -%]
 
 <div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/plugins/plugins-home.pl">Plugins</a> &rsaquo; WPM Online Payments &rsaquo; Configuration</div>
 
@@ -71,6 +72,53 @@
                             <li>
                                 <label for="WPMDepartmentID">Department ID: </label>
                                 <input type="text" name="WPMDepartmentID" value="[% WPMDepartmentID %]" />
+                            </li>
+                        </ol>
+                    </fieldset>
+
+                    <fieldset class="rows">
+                        <legend>Transaction Field Settings</legend>
+                        <p>The custom field definitions accept template toolkit variables in the form [% stag %] borrower.fieldname [% etag %].</p>
+                        <ol>
+                            <li>
+                                <label for="customfield1">Custom Field 1: </label>
+                                <input type="text" name="customfield1" value="[% customfield1 %]" />
+                            </li>
+                            <li>
+                                <label for="customfield2">Custom Field 2: </label>
+                                <input type="text" name="customfield2" value="[% customfield2 %]" />
+                            </li>
+                            <li>
+                                <label for="customfield3">Custom Field 3: </label>
+                                <input type="text" name="customfield3" value="[% customfield3 %]" />
+                            </li>
+                            <li>
+                                <label for="customfield4">Custom Field 4: </label>
+                                <input type="text" name="customfield4" value="[% customfield4 %]" />
+                            </li>
+                            <li>
+                                <label for="customfield5">Custom Field 5: </label>
+                                <input type="text" name="customfield5" value="[% customfield5 %]" />
+                            </li>
+                            <li>
+                                <label for="customfield6">Custom Field 6: </label>
+                                <input type="text" name="customfield6" value="[% customfield6 %]" />
+                            </li>
+                            <li>
+                                <label for="customfield7">Custom Field 7: </label>
+                                <input type="text" name="customfield7" value="[% customfield7 %]" />
+                            </li>
+                            <li>
+                                <label for="customfield8">Custom Field 8: </label>
+                                <input type="text" name="customfield8" value="[% customfield8 %]" />
+                            </li>
+                            <li>
+                                <label for="customfield9">Custom Field 9: </label>
+                                <input type="text" name="customfield9" value="[% customfield9 %]" />
+                            </li>
+                            <li>
+                                <label for="customfield10">Custom Field 10: </label>
+                                <input type="text" name="customfield10" value="[% customfield10 %]" />
                             </li>
                         </ol>
                     </fieldset>
