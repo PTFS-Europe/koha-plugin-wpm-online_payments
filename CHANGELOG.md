@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v00.00.05] - 2019-09-06
+
 ### Added
 - Configurable transaction level customfield definitions including basic template support
 
