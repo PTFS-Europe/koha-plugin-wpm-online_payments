@@ -78,6 +78,7 @@ if ( $success eq '1' ) {
             amount     => $totalpaid,
             note       => 'WPM Payment',
             library_id => $borrower->branchcode,
+            interface  => 'opac',
             lines => $lines,    # Arrayref of Koha::Account::Line objects to pay
                                 #account_type => $type,  # accounttype code
                  #offset_type  => $offset_type,    # offset type code

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Configurable transaction level customfield definitions including basic template support
+- Added the `interface` argument to the parameters passed in the call to Koha::Account::pay
 
 ## [v00.00.04] - 2019-08-09
 
