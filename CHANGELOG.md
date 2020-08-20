@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Add support for 19.11.x (accounttype -> debit_type_code)
+
 ## [v00.00.05] - 2019-09-06
 
 ### Added

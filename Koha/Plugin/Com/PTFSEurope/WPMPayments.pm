@@ -1,4 +1,12 @@
+use utf8;
+
 package Koha::Plugin::Com::PTFSEurope::WPMPayments;
+
+=head1 Koha::Plugin::Com::PTFSEurope::WPMPayments;
+
+Koha::Plugin::Com::PTFSEurope::WPMPayments
+
+=cut
 
 use Modern::Perl;
 
@@ -16,8 +24,7 @@ use HTML::Entities;
 
 ## Here we set our plugin version
 our $VERSION = "00.00.05";
-
-my $debug = 0;
+our $debug   = 0;
 
 ## Here is our metadata, some keys are required, some are optional
 our $metadata = {
@@ -26,7 +33,7 @@ our $metadata = {
     date_authored   => '2018-06-13',
     date_updated    => "2019-09-06",
     minimum_version => '17.11.00.000',
-    maximum_version => undef,
+    maximum_version => '20.05.00.000',
     version         => $VERSION,
     description     => 'This plugin implements online payments using '
       . 'WPM Educations payments platform.',
@@ -47,13 +54,31 @@ sub new {
     return $self;
 }
 
+sub _version_check {
+    my ( $self, $minversion ) = @_;
+
+    $minversion =~ s/(.*\..*)\.(.*)\.(.*)/$1$2$3/;
+
+    my $kohaversion = Koha::version();
+
+    # remove the 3 last . to have a Perl number
+    $kohaversion =~ s/(.*\..*)\.(.*)\.(.*)/$1$2$3/;
+
+    return ( $kohaversion > $minversion );
+}
+
 sub opac_online_payment {
     my ( $self, $args ) = @_;
 
     return $self->retrieve_data('enable_opac_payments') eq 'Yes';
 }
 
-## Initiate the payment process
+=head2 opac_online_payment_begin
+
+  Initiate online payment process
+
+=cut
+
 sub opac_online_payment_begin {
     my ( $self, $args ) = @_;
     $debug and warn "Inside opac_online_payment_begin for: " . caller . "\n";
@@ -301,7 +326,10 @@ sub opac_online_payment_begin {
         my $payments = $xml->createElement('payments');
         $payments->setAttribute( 'id'        => $accountline->accountlines_id );
         $payments->setAttribute( 'type'      => 'PN' );
-        $payments->setAttribute( 'payoption' => $accountline->accounttype );
+        $payments->setAttribute(
+            'payoption' => $self->_version_check('19.11.00')
+            ? $accountline->debit_type_code
+            : $accountline->accounttype );
 
         my $description = $xml->createElement("description");
         if ( defined( $accountline->description )
@@ -394,7 +422,12 @@ sub opac_online_payment_begin {
     print $template->output();
 }
 
-## Complete the payment process
+=head2 opac_online_payment_end
+
+  Complete online payment process
+
+=cut
+
 sub opac_online_payment_end {
     my ( $self, $args ) = @_;
 
