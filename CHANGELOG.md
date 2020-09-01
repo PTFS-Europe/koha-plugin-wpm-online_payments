@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Correct version comparision to use internal perl version objects for dotted decimal version string comparisons
 - Updated custom field regex to be more lenient with whitespace and plurals
+- Map debit_type_codes for system types to allow backward compatability for WPM
 
 ## [v00.00.06] - 2020-08-20
 

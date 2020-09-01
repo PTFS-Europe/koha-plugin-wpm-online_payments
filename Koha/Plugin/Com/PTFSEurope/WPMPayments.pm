@@ -40,6 +40,14 @@ our $metadata = {
       . 'WPM Educations payments platform.',
 };
 
+## Map Koha system debit types to WPM fee_Type codes
+# WPM refuse to update their implimentation to reflect changes to Koha
+# so we have this mapping for compatability.
+our %system_type_map = (
+    'OVERDUE' => 'F',
+    'LOST' => 'L'
+);
+
 sub new {
     my ( $class, $args ) = @_;
 
@@ -321,10 +329,15 @@ sub opac_online_payment_begin {
         my $payments = $xml->createElement('payments');
         $payments->setAttribute( 'id'        => $accountline->accountlines_id );
         $payments->setAttribute( 'type'      => 'PN' );
-        $payments->setAttribute(
-            'payoption' => $self->_version_check('19.11.00')
-            ? $accountline->debit_type_code
-            : $accountline->accounttype );
+
+        my $debit_type_code =
+            $self->_version_check('19.11.00')
+          ? $accountline->debit_type_code->code
+          : $accountline->accounttype;
+        if ( exists( $system_type_map{$debit_type_code} ) ) {
+            $debit_type_code = $system_type_map{$debit_type_code};
+        }
+        $payments->setAttribute( 'payoption' => $debit_type_code );
 
         my $description = $xml->createElement("description");
         if ( defined( $accountline->description )
