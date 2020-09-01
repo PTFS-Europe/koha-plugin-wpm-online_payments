@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Correct version comparision to use internal perl version objects for dotted decimal version string comparisons
 - Updated custom field regex to be more lenient with whitespace and plurals
 - Map debit_type_codes for system types to allow backward compatability for WPM
+- Set a userenv in callback.pl so that we do not fail on unfixed versions of Koha::Account::pay
 
 ## [v00.00.06] - 2020-08-20
 

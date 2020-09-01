@@ -21,7 +21,6 @@ use CGI qw( -utf8 );
 
 use C4::Context;
 use C4::Circulation;
-use C4::Auth;
 use Koha::Account;
 use Koha::Account::Lines;
 use Koha::Patrons;
@@ -49,6 +48,17 @@ my $transaction_id = $xml->findvalue('/wpmpaymentrequest/transactionreference');
 my $success        = $xml->findvalue('/wpmpaymentrequest/transaction/success');
 
 my $borrower = Koha::Patrons->find($borrowernumber);
+
+# Set the userenv
+C4::Context->_new_userenv( 'PLUGIN_' . time() );
+C4::Context->set_userenv(
+    $borrower->borrowernumber, $borrower->userid,
+    $borrower->cardnumber,     $borrower->firstname,
+    $borrower->surname,        $borrower->branchcode,
+    $borrower->flags,          undef,
+    undef,                     undef,
+    undef,
+);
 
 if ( $success eq '1' ) {
 
