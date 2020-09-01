@@ -127,7 +127,7 @@ sub opac_online_payment_begin {
     my %customfields;
     for my $i ( 1 .. 10 ) {
         $customfields{$i} = $self->retrieve_data("customfield$i");
-        if ( $customfields{$i} =~ m/(.*)\[% borrower\.(.*) %\](.*)/ ) {
+        if ( $customfields{$i} =~ m/(.*)\[% *borrowers?\.(.*?) *%\](.*)/ ) {
             my ( $pre, $variable, $post ) = ( $1, $2, $3 );
             $customfields{$i} = $pre . $borrower_result->$variable . $post;
         }
