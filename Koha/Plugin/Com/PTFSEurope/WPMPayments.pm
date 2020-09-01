@@ -10,7 +10,8 @@ Koha::Plugin::Com::PTFSEurope::WPMPayments
 
 use Modern::Perl;
 
-use base qw(Koha::Plugins::Base);
+use base qw(Koha::Plugins::Base)
+use version 0.77;
 
 use C4::Context;
 use C4::Auth;
@@ -57,14 +58,8 @@ sub new {
 sub _version_check {
     my ( $self, $minversion ) = @_;
 
-    $minversion =~ s/(.*\..*)\.(.*)\.(.*)/$1$2$3/;
-
     my $kohaversion = Koha::version();
-
-    # remove the 3 last . to have a Perl number
-    $kohaversion =~ s/(.*\..*)\.(.*)\.(.*)/$1$2$3/;
-
-    return ( $kohaversion > $minversion );
+    return ( version->parse($kohaversion) > version->parse($minversion) );
 }
 
 sub opac_online_payment {

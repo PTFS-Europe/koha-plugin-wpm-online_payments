@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Correct version comparision to use internal perl version objects for dotted decimal version string comparisons
+
 ## [v00.00.06] - 2020-08-20
 
 ### Fixed
