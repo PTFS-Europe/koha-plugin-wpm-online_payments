@@ -30,7 +30,7 @@
                     </p>
                 
                     <form id="wpmform" method="post" action="[% WPMPathway %]">
-                        <input id="wpm_xml" type="hidden" name="xml" value='[% XMLPost %]'/>
+                        <input id="wpm_xml" type="hidden" name="xml" value='[% XMLPost | xml %]'/>
                     </form>
                 </div>
             </div>
