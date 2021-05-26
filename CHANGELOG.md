@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Add missing semi-colon that prevented compile.. doh!
+
 ## [v00.00.07] - 2021-05-26
 
 ### Fixed

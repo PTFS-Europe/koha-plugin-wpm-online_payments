@@ -4,13 +4,13 @@ package Koha::Plugin::Com::PTFSEurope::WPMPayments;
 
 =head1 Koha::Plugin::Com::PTFSEurope::WPMPayments;
 
-Koha::Plugin::Com::PTFSEurope::WPMPayments
+    Koha::Plugin::Com::PTFSEurope::WPMPayments
 
 =cut
 
 use Modern::Perl;
 
-use base qw(Koha::Plugins::Base)
+use base qw(Koha::Plugins::Base);
 use version 0.77;
 
 use C4::Context;
