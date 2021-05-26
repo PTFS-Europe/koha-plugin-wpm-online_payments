@@ -24,7 +24,7 @@ use Digest::MD5 qw(md5_hex);
 use HTML::Entities;
 
 ## Here we set our plugin version
-our $VERSION = "00.00.07";
+our $VERSION = "00.00.08";
 our $debug   = 0;
 
 ## Here is our metadata, some keys are required, some are optional
