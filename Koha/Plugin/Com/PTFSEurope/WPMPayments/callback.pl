@@ -90,11 +90,16 @@ if ( $success eq '1' ) {
             library_id => $borrower->branchcode,
             interface  => 'opac',
             lines => $lines,    # Arrayref of Koha::Account::Line objects to pay
-                                #account_type => $type,  # accounttype code
-                 #offset_type  => $offset_type,    # offset type code
+            #account_type => $type,  # accounttype code
+            #offset_type  => $offset_type,    # offset type code
         }
     );
     $debug and warn "Payment of $totalpaid made against " . join(', ', @accountline_ids);
+
+    # Return signature of ->pay changed with version 20.05.00
+    if ( $paymentHandler->_version_check('20.05.00') {
+            $accountline_id = $accountline_id->{payment_id};
+    }
 
     # Link payment to wpm_transactions
     my $dbh   = C4::Context->dbh;

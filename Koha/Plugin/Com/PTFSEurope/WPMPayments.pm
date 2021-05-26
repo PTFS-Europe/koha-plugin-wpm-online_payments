@@ -34,7 +34,7 @@ our $metadata = {
     date_authored   => '2018-06-13',
     date_updated    => "2020-08-20",
     minimum_version => '17.11.00.000',
-    maximum_version => '20.05.00.000',
+    maximum_version => '20.11.06.000',
     version         => $VERSION,
     description     => 'This plugin implements online payments using '
       . 'WPM Educations payments platform.',
