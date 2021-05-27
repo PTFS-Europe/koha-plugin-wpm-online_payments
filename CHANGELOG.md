@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v00.00.09] - 2021-05-27
+
 ### Fixed
 - Add missing closing brace to logic statement that prevented return of callback.pl.. doh!
 
