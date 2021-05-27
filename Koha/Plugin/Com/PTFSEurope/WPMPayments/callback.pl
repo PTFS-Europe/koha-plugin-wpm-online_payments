@@ -97,8 +97,8 @@ if ( $success eq '1' ) {
     $debug and warn "Payment of $totalpaid made against " . join(', ', @accountline_ids);
 
     # Return signature of ->pay changed with version 20.05.00
-    if ( $paymentHandler->_version_check('20.05.00') {
-            $accountline_id = $accountline_id->{payment_id};
+    if ( $paymentHandler->_version_check('20.05.00') ) {
+        $accountline_id = $accountline_id->{payment_id};
     }
 
     # Link payment to wpm_transactions
