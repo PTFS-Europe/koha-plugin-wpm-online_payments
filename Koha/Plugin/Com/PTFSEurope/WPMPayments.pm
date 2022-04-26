@@ -14,7 +14,7 @@ use base qw(Koha::Plugins::Base);
 use version 0.77;
 
 use C4::Context;
-use C4::Auth;
+use C4::Auth qw( get_template_and_user );
 use Koha::Account;
 use Koha::Account::Lines;
 use Koha::Patrons;
