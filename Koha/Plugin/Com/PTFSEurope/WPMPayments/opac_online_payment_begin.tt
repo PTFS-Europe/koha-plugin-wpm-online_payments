@@ -1,29 +1,32 @@
 [% USE Koha %]
 [% USE KohaDates %]
 
-[% INCLUDE 'doc-head-open.inc' %][% IF ( LibraryNameTitle ) %][% LibraryNameTitle %][% ELSE %]Koha online[% END %] catalog &rsaquo; Pay your fines and charges
+[% INCLUDE 'doc-head-open.inc' %]
+<title>[% IF ( LibraryNameTitle ) %][% LibraryNameTitle %][% ELSE %]Koha online[% END %] catalog &rsaquo; Pay your fines and charges</title>
 [% INCLUDE 'doc-head-close.inc' %]
 [% BLOCK cssinclude %][% END %]
 </head>
-<body id="opac-account" class="scrollto">
+[% INCLUDE 'bodytag.inc' bodyid='opac-account' bodyclass='scrollto' %]
 [% INCLUDE 'masthead.inc' %]
 
 <div class="main">
-    <ul class="breadcrumb">
-        <li><a href="/cgi-bin/koha/opac-main.pl">Home</a> <span class="divider">&rsaquo;</span></li>
-        <li><a href="/cgi-bin/koha/opac-user.pl">[% borrower.firstname %] [% borrower.surname %]</a><span class="divider">&rsaquo;</span></li>
-        <li><a href="#">Pay your fines and charges</a></li>
-    </ul>
+    <nav id="breadcrumbs" aria-label="Breadcrumb" class="breadcrumbs">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/cgi-bin/koha/opac-main.pl">Home</a></li>
+            <li class="breadcrumb-item"><a href="/cgi-bin/koha/opac-user.pl">[% borrower.firstname %] [% borrower.surname %]</a></li>
+            <li class="breadcrumb-item active"><a href="#">Pay your fines and charges</a></li>
+        </ol>
+    </nav>
 
     <div class="container-fluid">
-        <div class="row-fluid">
-            <div class="span2">
+        <div class="row">
+            <div class="col col-lg-2 order-2 order-lg-1">
                 <div id="navigation">
                     [% INCLUDE 'navigation.inc' IsPatronPage=1 %]
                 </div>
             </div>
 
-            <div class="span10">
+            <div class="col-md-12 col-lg-10 order-1 order-lg-2">
                 <div id="useraccount" class="maincontent">
                     <p>
                         Momentarily you will be redirected to the WPM payment portal.
