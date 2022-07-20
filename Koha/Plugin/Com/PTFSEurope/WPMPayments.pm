@@ -24,7 +24,7 @@ use Digest::MD5 qw(md5_hex);
 use HTML::Entities;
 
 ## Here we set our plugin version
-our $VERSION = "00.00.09";
+our $VERSION = "00.00.10";
 our $debug   = 0;
 
 ## Here is our metadata, some keys are required, some are optional
@@ -34,7 +34,7 @@ our $metadata = {
     date_authored   => '2018-06-13',
     date_updated    => "2021-05-27",
     minimum_version => '17.11.00.000',
-    maximum_version => '20.11.06.000',
+    maximum_version => '21.11.09.000',
     version         => $VERSION,
     description     => 'This plugin implements online payments using '
       . 'WPM Educations payments platform.',
