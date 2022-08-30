@@ -20,6 +20,7 @@ use Koha::Account::Lines;
 use Koha::Patrons;
 
 use XML::LibXML;
+use DateTime;
 use Digest::MD5 qw(md5_hex);
 use HTML::Entities;
 
