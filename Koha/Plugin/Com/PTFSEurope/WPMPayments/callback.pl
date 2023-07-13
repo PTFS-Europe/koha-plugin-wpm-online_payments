@@ -17,6 +17,8 @@
 # with Koha; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+use Modern::Perl;
+
 use CGI qw( -utf8 );
 
 use C4::Context;
@@ -82,7 +84,7 @@ if ( $success eq '1' ) {
     # Make Payment
     my $lines = Koha::Account::Lines->search(
         { accountlines_id => { 'in' => \@accountline_ids } } )->as_list;
-    my $account = Koha::Account->new( { patron_id => $borrowernumber } );
+    my $account        = Koha::Account->new( { patron_id => $borrowernumber } );
     my $accountline_id = $account->pay(
         {
             amount     => $totalpaid,
@@ -90,11 +92,12 @@ if ( $success eq '1' ) {
             library_id => $borrower->branchcode,
             interface  => 'opac',
             lines => $lines,    # Arrayref of Koha::Account::Line objects to pay
-            #account_type => $type,  # accounttype code
-            #offset_type  => $offset_type,    # offset type code
+            #payment_type => $payment_type,  # accounttype code
         }
     );
-    $debug and warn "Payment of $totalpaid made against " . join(', ', @accountline_ids);
+    $debug
+      and warn "Payment of $totalpaid made against "
+      . join( ', ', @accountline_ids );
 
     # Return signature of ->pay changed with version 20.05.00
     if ( $paymentHandler->_version_check('20.05.00') ) {
@@ -108,7 +111,9 @@ if ( $success eq '1' ) {
         "UPDATE $table SET accountline_id = ? WHERE transaction_id = ?");
     $sth->execute( $accountline_id, $transaction_id );
     $debug and warn "Update the original transaction";
-    $debug and warn "UPDATE $table SET accountline_id = $accountline_id WHERE transaction_id = $transaction_id;";
+    $debug
+      and warn
+"UPDATE $table SET accountline_id = $accountline_id WHERE transaction_id = $transaction_id;";
 
     # Renew any items as required
     unless ( $paymentHandler->_version_check('20.05.00') ) {
@@ -151,8 +156,8 @@ if ( $success eq '1' ) {
                             $line->borrowernumber, $line->itemnumber, 0 );
                         if ($can) {
 
-                            # Fix paid for fine before renewal to prevent 
-                            # call to _CalculateAndUpdateFine if 
+                            # Fix paid for fine before renewal to prevent
+                            # call to _CalculateAndUpdateFine if
                             # CalculateFinesOnReturn is set.
                             C4::Circulation::_FixOverduesOnReturn(
                                 $line->borrowernumber, $line->itemnumber );

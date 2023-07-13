@@ -2,12 +2,6 @@ use utf8;
 
 package Koha::Plugin::Com::PTFSEurope::WPMPayments;
 
-=head1 Koha::Plugin::Com::PTFSEurope::WPMPayments;
-
-    Koha::Plugin::Com::PTFSEurope::WPMPayments
-
-=cut
-
 use Modern::Perl;
 
 use base qw(Koha::Plugins::Base);
@@ -33,9 +27,9 @@ our $metadata = {
     name            => 'WPM Online Payments Plugin',
     author          => 'Martin Renvoize',
     date_authored   => '2018-06-13',
-    date_updated    => "2021-05-27",
+    date_updated    => "2023-07-13",
     minimum_version => '17.11.00.000',
-    maximum_version => '21.11.09.000',
+    maximum_version => '22.11.24.000',
     version         => $VERSION,
     description     => 'This plugin implements online payments using '
       . 'WPM Educations payments platform.',
@@ -46,7 +40,7 @@ our $metadata = {
 # so we have this mapping for compatability.
 our %system_type_map = (
     'OVERDUE' => 'F',
-    'LOST' => 'L'
+    'LOST'    => 'L'
 );
 
 sub new {
@@ -143,12 +137,12 @@ sub opac_online_payment_begin {
     }
 
     # Construct XML POST
-    my $xml = XML::LibXML::Document->new( '1.0', 'utf-8' );
+    my $xml  = XML::LibXML::Document->new( '1.0', 'utf-8' );
     my $root = $xml->createElement('wpmpaymentrequest');
 
     my @fields = (
         {
-            name => 'clientid',
+            name  => 'clientid',
             value =>
               { value => $self->retrieve_data('WPMClientID'), cdata => 0 }
         },
@@ -157,7 +151,7 @@ sub opac_online_payment_begin {
             value => { value => 1, cdata => 0 }
         },
         {
-            name => 'pathwayid',
+            name  => 'pathwayid',
             value =>
               { value => $self->retrieve_data('WPMPathwayID'), cdata => 0 }
         },
@@ -328,8 +322,8 @@ sub opac_online_payment_begin {
         # Build payments block
         ######################
         my $payments = $xml->createElement('payments');
-        $payments->setAttribute( 'id'        => $accountline->accountlines_id );
-        $payments->setAttribute( 'type'      => 'PN' );
+        $payments->setAttribute( 'id'   => $accountline->accountlines_id );
+        $payments->setAttribute( 'type' => 'PN' );
 
         my $debit_type_code =
             $self->_version_check('19.11.00')
@@ -465,7 +459,7 @@ sub opac_online_payment_end {
 
     my $line =
       Koha::Account::Lines->find( { accountlines_id => $accountline_id } );
-    my $transaction_value = $line->amount;
+    my $transaction_value  = $line->amount;
     my $transaction_amount = sprintf "%.2f", $transaction_value;
     $transaction_amount =~ s/^-//g;
 
@@ -515,24 +509,24 @@ sub configure {
         $template->param(
             enable_opac_payments =>
               $self->retrieve_data('enable_opac_payments'),
-            WPMClientID     => $self->retrieve_data('WPMClientID'),
-            WPMSecret       => $self->retrieve_data('WPMSecret'),
-            WPMPathway      => $self->retrieve_data('WPMPathway'),
-            WPMPathwayID    => $self->retrieve_data('WPMPathwayID'),
-            WPMDepartmentID => $self->retrieve_data('WPMDepartmentID'),
-            DefaultVATDesc  => $self->retrieve_data('DefaultVATDesc'),
-            DefaultVATCode  => $self->retrieve_data('DefaultVATCode'),
-            DefaultVATRate  => $self->retrieve_data('DefaultVATRate'),
-            customfield1    => $self->retrieve_data('customfield1'),
-            customfield2    => $self->retrieve_data('customfield2'),
-            customfield3    => $self->retrieve_data('customfield3'),
-            customfield4    => $self->retrieve_data('customfield4'),
-            customfield5    => $self->retrieve_data('customfield5'),
-            customfield6    => $self->retrieve_data('customfield6'),
-            customfield7    => $self->retrieve_data('customfield7'),
-            customfield8    => $self->retrieve_data('customfield8'),
-            customfield9    => $self->retrieve_data('customfield9'),
-            customfield10   => $self->retrieve_data('customfield10'),
+            WPMClientID          => $self->retrieve_data('WPMClientID'),
+            WPMSecret            => $self->retrieve_data('WPMSecret'),
+            WPMPathway           => $self->retrieve_data('WPMPathway'),
+            WPMPathwayID         => $self->retrieve_data('WPMPathwayID'),
+            WPMDepartmentID      => $self->retrieve_data('WPMDepartmentID'),
+            DefaultVATDesc       => $self->retrieve_data('DefaultVATDesc'),
+            DefaultVATCode       => $self->retrieve_data('DefaultVATCode'),
+            DefaultVATRate       => $self->retrieve_data('DefaultVATRate'),
+            customfield1         => $self->retrieve_data('customfield1'),
+            customfield2         => $self->retrieve_data('customfield2'),
+            customfield3         => $self->retrieve_data('customfield3'),
+            customfield4         => $self->retrieve_data('customfield4'),
+            customfield5         => $self->retrieve_data('customfield5'),
+            customfield6         => $self->retrieve_data('customfield6'),
+            customfield7         => $self->retrieve_data('customfield7'),
+            customfield8         => $self->retrieve_data('customfield8'),
+            customfield9         => $self->retrieve_data('customfield9'),
+            customfield10        => $self->retrieve_data('customfield10'),
             payment_customfield1 =>
               $self->retrieve_data('payment_customfield1'),
         );
@@ -545,24 +539,24 @@ sub configure {
             {
                 enable_opac_payments =>
                   scalar $cgi->param('enable_opac_payments'),
-                WPMClientID     => scalar $cgi->param('WPMClientID'),
-                WPMSecret       => scalar $cgi->param('WPMSecret'),
-                WPMPathway      => scalar $cgi->param('WPMPathway'),
-                WPMPathwayID    => scalar $cgi->param('WPMPathwayID'),
-                WPMDepartmentID => scalar $cgi->param('WPMDepartmentID'),
-                DefaultVATDesc  => scalar $cgi->param('DefaultVATDesc'),
-                DefaultVATCode  => scalar $cgi->param('DefaultVATCode'),
-                DefaultVATRate  => scalar $cgi->param('DefaultVATRate'),
-                customfield1    => scalar $cgi->param('customfield1'),
-                customfield2    => scalar $cgi->param('customfield2'),
-                customfield3    => scalar $cgi->param('customfield3'),
-                customfield4    => scalar $cgi->param('customfield4'),
-                customfield5    => scalar $cgi->param('customfield5'),
-                customfield6    => scalar $cgi->param('customfield6'),
-                customfield7    => scalar $cgi->param('customfield7'),
-                customfield8    => scalar $cgi->param('customfield8'),
-                customfield9    => scalar $cgi->param('customfield9'),
-                customfield10   => scalar $cgi->param('customfield10'),
+                WPMClientID          => scalar $cgi->param('WPMClientID'),
+                WPMSecret            => scalar $cgi->param('WPMSecret'),
+                WPMPathway           => scalar $cgi->param('WPMPathway'),
+                WPMPathwayID         => scalar $cgi->param('WPMPathwayID'),
+                WPMDepartmentID      => scalar $cgi->param('WPMDepartmentID'),
+                DefaultVATDesc       => scalar $cgi->param('DefaultVATDesc'),
+                DefaultVATCode       => scalar $cgi->param('DefaultVATCode'),
+                DefaultVATRate       => scalar $cgi->param('DefaultVATRate'),
+                customfield1         => scalar $cgi->param('customfield1'),
+                customfield2         => scalar $cgi->param('customfield2'),
+                customfield3         => scalar $cgi->param('customfield3'),
+                customfield4         => scalar $cgi->param('customfield4'),
+                customfield5         => scalar $cgi->param('customfield5'),
+                customfield6         => scalar $cgi->param('customfield6'),
+                customfield7         => scalar $cgi->param('customfield7'),
+                customfield8         => scalar $cgi->param('customfield8'),
+                customfield9         => scalar $cgi->param('customfield9'),
+                customfield10        => scalar $cgi->param('customfield10'),
                 payment_customfield1 =>
                   scalar $cgi->param('payment_customfield1'),
                 last_configured_by => C4::Context->userenv->{'number'},
