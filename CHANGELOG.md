@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v00.00.11] - 2023-11-08
+- Style improvements for 22.11
+- Pretty printing of XML in logs
+
 ## [v00.00.10] - 2022-07-20
 
 ### Fixed
