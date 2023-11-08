@@ -414,7 +414,7 @@ sub opac_online_payment_begin {
 
     # Finalise XML Document
     $xml->setDocumentElement($root);
-    my $string = $xml->toString();
+    my $string = $xml->toString(2);
 
     $template->param(
         WPMPathway => $self->retrieve_data('WPMPathway'),
