@@ -13,6 +13,7 @@ use Koha::Account;
 use Koha::Account::Lines;
 use Koha::Patrons;
 
+use Email::Address;
 use XML::LibXML;
 use DateTime;
 use Digest::MD5 qw(md5_hex);
@@ -140,6 +141,10 @@ sub opac_online_payment_begin {
     my $xml  = XML::LibXML::Document->new( '1.0', 'utf-8' );
     my $root = $xml->createElement('wpmpaymentrequest');
 
+    # Email handling
+    my @addrs = Email::Address->parse(C4::Context->preference('KohaAdminEmailAddress'));
+    my $from_address = $addrs[0]->address;
+
     my @fields = (
         {
             name  => 'clientid',
@@ -186,7 +191,7 @@ sub opac_online_payment_begin {
         {
             name  => 'emailfrom',
             value => {
-                value => C4::Context->preference('KohaAdminEmailAddress'),
+                value => $from_address,
                 cdata => 1
             }
         },
