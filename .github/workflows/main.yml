@@ -21,6 +21,6 @@ jobs:
           VERSION=$(node checkVersionNumber.js)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
       - name: 'Create Release'
-        run: hub release create ${{ env.VERSION }} -m ${{ env.VERSION }} -a koha-plugin-wpm-payments.kpz
+        run: gh release create ${{ env.VERSION }} -m ${{ env.VERSION }} -a koha-plugin-wpm-payments.kpz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
